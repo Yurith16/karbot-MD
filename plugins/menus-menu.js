@@ -2,27 +2,27 @@ import { promises as fs } from 'fs';
 import { join } from 'path';
 
 const handler = async (m, { conn, usedPrefix, __dirname, isPrems }) => {
-        const idioma = global.db.data.users[m.sender]?.language || global.defaultLenguaje || 'es';
-        const _translate = JSON.parse(await fs.readFile(`./src/languages/${idioma}/${m.plugin}.json`));
-        const tradutor = _translate.plugins.menu;
+    const idioma = global.db.data.users[m.sender]?.language || global.defaultLenguaje || 'es';
+    const _translate = JSON.parse(await fs.readFile(`./src/languages/${idioma}/${m.plugin}.json`));
+    const tradutor = _translate.plugins.menu;
 
     try {
         const username = '@' + m.sender.split('@s.whatsapp.net')[0];
         if (usedPrefix == 'a' || usedPrefix == 'A') return;
 
         const more = String.fromCharCode(8206);
-        const readMore = more.repeat(4001); 
-            
+        const readMore = more.repeat(4001);
+
         const d = new Date(new Date().getTime() + 3600000);
-        
+
         const localeMap = {
             'es': 'es-ES',
             'en': 'en-US',
             'ar': 'ar-SA'
         };
-        
+
         const locale = localeMap[idioma.toLowerCase()] || 'es-ES';
-        
+
         let week, date;
         try {
             week = d.toLocaleDateString(locale, { weekday: 'long' });
@@ -31,20 +31,24 @@ const handler = async (m, { conn, usedPrefix, __dirname, isPrems }) => {
             week = d.toLocaleDateString('es-ES', { weekday: 'long' });
             date = d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
         }
-        
+
         const _uptime = process.uptime() * 1000;
         const uptime = clockString(_uptime);
         const rtotalreg = Object.values(global.db.data.users).filter(user => user.registered == true).length;
         const rtotal = Object.keys(global.db.data.users).length || '0';
 
-        const tags = tradutor.tags || {};
-        
+        const user = global.db.data.users[m.sender];
+        const exp = user.exp ? user.exp : 0;
+        const limit = user.limit ? user.limit : 0;
+        const level = user.level ? user.level : 0;
+        const role = user.role ? user.role : 'Nuevo';
+        const money = user.money ? user.money : 0;
+        const joincount = user.joincount ? user.joincount : 0;
+        const isPremium = user.premiumTime > 0 || isPrems;
+
+        // Comando que tienes en tu código original
         const extrasCommands = {
             'info': [
-                `${usedPrefix}menuaudios`,
-                `${usedPrefix}menuanimes`,
-                `${usedPrefix}labiblia`,
-                `${usedPrefix}lang`,
                 `${usedPrefix}infobot`,
                 `${usedPrefix}script`,
                 `${usedPrefix}estado`,
@@ -114,16 +118,12 @@ const handler = async (m, { conn, usedPrefix, __dirname, isPrems }) => {
                 `${usedPrefix}facebook <url>`,
                 `${usedPrefix}instagram <url>`,
                 `${usedPrefix}tiktok <url>`,
-                `${usedPrefix}tiktokimg <url>`,
-                `${usedPrefix}pptiktok <usr>`,
                 `${usedPrefix}mediafire <url>`,
                 `${usedPrefix}gitclone <url>`,
                 `${usedPrefix}gdrive <url>`,
                 `${usedPrefix}twitter <url>`,
                 `${usedPrefix}ringtone <txt>`,
-                `${usedPrefix}soundcloud <txt>`,
-                `${usedPrefix}stickerpack <url>`,
-                `${usedPrefix}dapk2 <url>`
+                `${usedPrefix}dapk2 <url}`
             ],
             'search': [
                 `${usedPrefix}modapk <txt>`,
@@ -135,8 +135,8 @@ const handler = async (m, { conn, usedPrefix, __dirname, isPrems }) => {
             ],
             'effects': [
                 `${usedPrefix}logos <efecto> <txt>`,
-                `${usedPrefix}logochristmas <txt>`,
-                `${usedPrefix}logocorazon <txt>`,
+                `${usedPrefix}logochristmas <txt}`,
+                `${usedPrefix}logocorazon <txt}`,
                 `${usedPrefix}pixelar`
             ],
             'img': [
@@ -244,43 +244,25 @@ const handler = async (m, { conn, usedPrefix, __dirname, isPrems }) => {
             ]
         };
 
-        let user = global.db.data.users[m.sender];
-        let exp = user.exp ? user.exp : 0
-        let limit = user.limit ? user.limit : 0;
-        let level = user.level ? user.level : 0;
-        let role = user.role ? user.role : 'Nuevo';
-        let money = user.money ? user.money : 0;
-        let joincount = user.joincount ? user.joincount : 0;
+        const tags = tradutor.tags || {};
 
-        const defaultMenu = {
-            before: (tradutor.menu_header || '')
-                .replace('@username', username)
-                .replace('@author', global.author || 'Desconocido')
-                .replace('@owner', global.owner?.[0]?.[0] || '000000000000')
-                .replace('@week', week)
-                .replace('@date', date)
-                .replace('@uptime', uptime)
-                .replace('@rtotal', rtotal)
-                .replace('@rtotalreg', rtotalreg),
-            
-            user_info: '\n' + (tradutor.user_info || '')
-                .replace('@level', level)
-                .replace('@exp', exp)
-                .replace('@role', role || 'Nuevo')
-                .replace('@limit', limit)
-                .replace('@money', money)
-                .replace('@joincount', joincount)
-                .replace('@premium', user.premiumTime > 0 ? 
-                    (tradutor.premium?.yes || '✅') : 
-                    (isPrems ? (tradutor.premium?.yes || '✅') : (tradutor.premium?.no || '❌'))),
-            
-            header: (tradutor.section_header).replace('@category', '%category'),
-            body: (tradutor.command_item).replace('@cmd', '%cmd').replace('@islimit', '%islimit'),
-            footer: tradutor.section_footer,
-            after: ''
+        const borderedTags = {
+            'info': '📱 MENÚ PRINCIPAL 📱',
+            'jadibot': '🤖 JADIBOT',
+            'xp': '✨ NIVELES Y ECONOMÍA',
+            'game': '🎮 JUEGOS',
+            'group': '👥 GRUPO',
+            'downloader': '📥 DESCARGAS',
+            'search': '🔍 BÚSQUEDA',
+            'effects': '🎨 EFECTOS',
+            'img': '🖼️ IMÁGENES',
+            'tools': '🛠️ HERRAMIENTAS',
+            'converter': '🔄 CONVERTIDORES',
+            'sticker': '🎭 STICKERS',
+            'owner': '👑 OWNER'
         };
 
-        let help = Object.values(global.plugins).filter(plugin => !plugin.disabled).map(plugin => {
+        const help = Object.values(global.plugins).filter(plugin => !plugin.disabled).map(plugin => {
             return {
                 help: Array.isArray(plugin.help) ? plugin.help : [plugin.help],
                 tags: Array.isArray(plugin.tags) ? plugin.tags : [plugin.tags],
@@ -290,79 +272,78 @@ const handler = async (m, { conn, usedPrefix, __dirname, isPrems }) => {
             }
         });
 
-        conn.menu = conn.menu || {};
-        let before = conn.menu.before || defaultMenu.before + '\n' + defaultMenu.user_info;
-        let header = conn.menu.header || defaultMenu.header;
-        let body = conn.menu.body || defaultMenu.body;
-        let footer = conn.menu.footer || defaultMenu.footer;
-        let after = conn.menu.after || defaultMenu.after;
+        const menuSections = Object.keys(borderedTags).map(tag => {
+            const commandsInTag = help.filter(menu => menu.tags && menu.tags.includes(tag) && menu.help).map(menu => {
+                return menu.help.map(h => `${usedPrefix}` + h).join('\n');
+            }).join('\n');
 
-        let _text = [
-            before + readMore,    
-            ...Object.keys(tags).map(tag => {
-                let pluginCommands = help.filter(menu => menu.tags && menu.tags.includes(tag) && menu.help).map(menu => {
-                    return menu.help.map(help => {
-                        return body.replace(/%cmd/g, menu.prefix ? help : '%p' + help)
-                            .replace(/%islimit/g, menu.limit ? '⭐' : '')
-                            .trim()
-                    }).join('\n')
-                });
-                
-                let categoryCommands = [...pluginCommands];
-                
-                if (extrasCommands[tag]) {
-                    let existingCommands = new Set();
-                    pluginCommands.forEach(cmdGroup => {
-                        cmdGroup.split('\n').forEach(line => {
-                            let match = line.match(/□\s+(.+)/);
-                            if (match) {
-                                let cmd = match[1].replace(/%p/g, usedPrefix).split(' ')[0];
-                                existingCommands.add(cmd);
-                            }
-                        });
-                    });
-                    
-                    let filteredExtras = extrasCommands[tag].filter(extraCmd => {
-                        let baseCmd = extraCmd.split(' ')[0];
-                        return !existingCommands.has(baseCmd);
-                    });
-                    
-                    if (filteredExtras.length > 0) {
-                        categoryCommands.push(
-                            ...filteredExtras.map(cmd => 
-                                body.replace(/%cmd/g, cmd).replace(/%islimit/g, '').trim()
-                            )
-                        );
-                    }
-                }
-                
-                return categoryCommands.length > 0 
-                    ? header.replace(/%category/g, tags[tag] || tag.toUpperCase()) + '\n' + categoryCommands.join('\n') + '\n' + footer
-                    : '';
-            }).filter(section => section !== ''),
-            after
-        ].join('\n');
+            const extraCommandsInTag = extrasCommands[tag] ? extrasCommands[tag].join('\n') : '';
 
-        let text = typeof conn.menu == 'string' ? conn.menu : typeof conn.menu == 'object' ? _text : '';
-        let replace = {
-            '%': '%',
-            p: usedPrefix,
-            taguser: '@' + m.sender.split("@s.whatsapp.net")[0],
-            me: conn.getName(conn.user.jid),
-            name: await conn.getName(m.sender)
-        };
-        
-        text = text.replace(new RegExp(`%(${Object.keys(replace).sort((a, b) => b.length - a.length).join`|`})`, 'g'), (_, name) => '' + replace[name]);
+            const allCommands = [commandsInTag, extraCommandsInTag].filter(Boolean).join('\n');
 
-        // ELIMINADO EL ENVÍO DE IMAGEN (COMENTADO PORQUE LAS IMÁGENES NO EXISTEN)
-        // let pp;
-        // const imageMap = {'es': global.imagen1, 'en': global.imagen4, 'ar': global.imagen5 };
-        // pp = imageMap[idioma.toLowerCase()] || global.imagen1;
-        // await conn.sendMessage(m.chat, { image: pp , caption: text.trim(), mentions: [m.sender] }, { quoted: m });
+            if (allCommands) {
+                return `
+╭━━〔${borderedTags[tag]}〕━━╮
+┃
+${allCommands.split('\n').map(cmd => `┃ ➡️ ${cmd}`).join('\n')}
+┃
+╰═┄═┄┄═┄═┄═┄═┄═┄═┄═┄═╯
+`.trim();
+            }
+            return '';
+        }).filter(section => section !== '');
 
-        // REEMPLAZADO POR ENVÍO DE SOLO TEXTO
-        await conn.sendMessage(m.chat, { text: text.trim(), mentions: [m.sender] }, { quoted: m });
-        
+        const infoBotSection = `
+╭━━〔 ℹ️ INFO DEL BOT ℹ️ 〕━━╮
+┃
+┃ ➡️ Creador: ${global.author || 'Desconocido'}
+┃ ➡️ Contacto: wa.me/${global.owner?.[0]?.[0] || '0'}
+┃ ➡️ Actividad: ${uptime}
+┃ ➡️ Usuarios totales: ${rtotal}
+┃ ➡️ Registrados: ${rtotalreg}
+┃
+╰═┄═┄┄═┄═┄═┄═┄═┄═┄═┄═╯
+`.trim();
+
+        const infoUserSection = `
+╭━━〔 ℹ️ INFO DEL USUARIO ℹ️ 〕━━╮
+┃
+┃ ➡️ Usuario: ${username}
+┃ ➡️ Nivel: ${level}
+┃ ➡️ Rol: ${role}
+┃ ➡️ XP: ${exp}
+┃ ➡️ Diamantes: ${limit}
+┃ ➡️ Dinero: ${money}
+┃ ➡️ Premium: ${isPremium ? '✅' : '❌'}
+┃
+╰═┄═┄┄═┄═┄═┄═┄═┄═┄═┄═╯
+`.trim();
+
+        const mainHeader = `
+╭━━〔 🔥 KARBOT 🔥 〕━━╮
+┃
+┃ ➡️ Hola, ${username}
+┃ ➡️ Fecha: ${week}, ${date}
+┃
+╰═┄═┄┄═┄═┄═┄═┄═┄═┄═┄═╯
+`.trim();
+
+        const fullText = [
+            mainHeader,
+            infoBotSection,
+            infoUserSection,
+            ...menuSections,
+            `🔥 Karbot - Tu bot personal 🔥`
+        ].join('\n\n');
+
+        const imageUrl = 'https://qu.ax/JCgKF.png'; 
+
+        await conn.sendMessage(m.chat, {
+            image: { url: imageUrl },
+            caption: fullText,
+            mentions: [m.sender]
+        }, { quoted: m });
+
     } catch (e) {
         await m.reply(`${tradutor?.error_message} ${e.message}`);
     }

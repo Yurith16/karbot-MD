@@ -1,16 +1,30 @@
+/* Desarrollado y Creado por: HERNANDEZ - KARBOT-MD */
+
 const handler = async (m, {conn}) => {
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.fun_reto
+  const retos = [
+    "💪 Haz 10 flexiones ahora mismo",
+    "🎤 Canta una canción en voz alta", 
+    "💬 Di algo vergonzoso de ti",
+    "🤣 Cuenta un chiste malo",
+    "📸 Tómate una selfie divertida",
+    "💃 Baila por 30 segundos",
+    "🗣️ Imita a alguien del grupo",
+    "🎭 Haz una mueca graciosa",
+    "📝 Escribe un poema improvisado",
+    "🎮 Nombra 5 videojuegos en 10 segundos",
+    "🍔 Di tu comida favorita con acento extranjero",
+    "🤔 Responde una pregunta personal",
+    "🎵 Tararea una canción para que adivinen",
+    "📅 Di qué harías si fuera el último día en la Tierra",
+    "👻 Cuenta una historia de miedo en 3 oraciones"
+  ];
 
-  global.bucin = tradutor.texto1;
-
-  conn.reply(m.chat, `*┌────「 𝚁𝙴𝚃𝙾 」─*\n*“${pickRandom(global.bucin)}”*\n*└────「 𝙼𝚈𝚂𝚃𝙸𝙲 」─*`, m);
+  conn.reply(m.chat, `╔══════════════════╗\n         🔥 *RETO* 🔥\n╚══════════════════╝\n\n*“${pickRandom(retos)}”*\n\n╔══════════════════╗\n         🤖 *KARBOT-MD* 🤖\n╚══════════════════╝`, m);
 };
+
 handler.help = ['reto'];
 handler.tags = ['game'];
-handler.command = /^reto/i;
+handler.command = /^reto|challenge|desafio$/i;
 export default handler;
 
 function pickRandom(list) {

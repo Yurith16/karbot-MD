@@ -2,11 +2,6 @@ import fs from 'fs';
 import { prepareWAMessageMedia, generateWAMessageFromContent, getDevice } from "baileys";
 
 const handler = async (m, {conn, args}) => {
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.gc_link
-
   let ppgc;
   try {
       ppgc = await conn.profilePictureUrl(m.chat, 'image')
@@ -15,7 +10,7 @@ const handler = async (m, {conn, args}) => {
   }  
   const ppgcbuff = await conn.getFile(ppgc)    
   const device = await getDevice(m.key.id);
-    
+
     if (device !== 'desktop' || device !== 'web') {
         const linkcode = await conn.groupInviteCode(m.chat)
         var messa = await prepareWAMessageMedia({ image: ppgcbuff.data}, { upload: conn.waUploadToServer })
@@ -49,12 +44,12 @@ const handler = async (m, {conn, args}) => {
         }, { userJid: conn.user.jid, quoted: m})
       conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id});
     } else {
-        conn.reply(m.chat, 'https://chat.whatsapp.com/' + await conn.groupInviteCode(group), m, {
+        conn.reply(m.chat, 'https://chat.whatsapp.com/' + await conn.groupInviteCode(m.chat), m, {
            contextInfo: {externalAdReply: {mediaUrl: null, mediaType: 1, description: null,
-           title: tradutor.texto1[0],
-           body: '𝚃𝚑𝚎 𝙼𝚢𝚜𝚝𝚒𝚌 - 𝙱𝚘𝚝',
+           title: '🔗 *ENLACE DEL GRUPO* 🔗',
+           body: 'KARBOT-MD',
            previewType: 0, thumbnail: fs.readFileSync('./src/assets/images/menu/languages/es/menu.png'),
-           sourceUrl: `https://github.com/BrunoSobrino/TheMystic-Bot-MD`}
+           sourceUrl: `https://github.com/Yurith16/karbot-MD`}
            }
         }
       );  
@@ -62,7 +57,7 @@ const handler = async (m, {conn, args}) => {
 };
 handler.help = ['link'];
 handler.tags = ['group'];
-handler.command = /^(link(gro?up)?)$/i;
+handler.command = /^(link(gro?up)?|enlace|invitacion)$/i;
 handler.group = true;
 handler.botAdmin = true;
 export default handler;

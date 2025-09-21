@@ -10,12 +10,12 @@ const handler = async (m, {conn, usedPrefix}) => {
     const totalMem = os.totalmem();
     const freeMem = os.freemem();
     const uptime = os.uptime();
-    
+
     // Convertir memoria a GB
     const formatMemory = (bytes) => {
       return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
     };
-    
+
     // Convertir uptime a formato legible
     const formatUptime = (seconds) => {
       const days = Math.floor(seconds / (24 * 60 * 60));
@@ -47,8 +47,7 @@ const handler = async (m, {conn, usedPrefix}) => {
 │ ▸ Multi-dispositivo
 │ ▸ Optimizado para CLI
 │
-│ 💼 *Patrocinadores:* 
-│   Próximamente...
+│ 💼 *Patrocinadores:* │    Próximamente...
 │
 │ 🔍 *Monitorización:*
 │ ▸ Uptime 24/7
@@ -60,24 +59,23 @@ const handler = async (m, {conn, usedPrefix}) => {
 │ ➤ Wa.me/50496926150 (Hernandez)
 │
 │ ⚠️ *Este es un proyecto privado*
-│   hosteado en infraestructura dedicada
+│    hosteado en infraestructura dedicada
 │
 ╰─「 *KARBOT-MD - Infraestructura Profesional* 」`.trim();
 
     // ENVÍO DE MENSAJE TÉCNICO
-    conn.sendMessage(m.chat, { 
+    conn.sendMessage(m.chat, {  
       text: text,
       contextInfo: {
         externalAdReply: {
-          mediaUrl: "https://github.com/Yurith16/karbot-MD",
           mediaType: 2,
           title: "🐧 KARBOT-MD - Info Técnica",
           body: `Plataforma: ${platform} ${arch} | Node: ${process.version}`,
-          sourceUrl: "https://github.com/Yurith16/karbot-MD"
+          sourceUrl: " "
         }
       }
     }, { quoted: m });
-    
+
   } catch (error) {
     // FALLBACK EN CASO DE ERROR
     const fallbackText = `╭─「 🖥️ *INFORMACIÓN TÉCNICA* 」
@@ -93,7 +91,7 @@ const handler = async (m, {conn, usedPrefix}) => {
 │ 📞 *Soporte:* Wa.me/50496926150
 │
 ╰─「 *KARBOT-MD - Infraestructura* 」`;
-    
+
     conn.sendMessage(m.chat, { text: fallbackText }, { quoted: m });
   }
 }; 

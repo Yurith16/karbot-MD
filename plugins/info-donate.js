@@ -1,9 +1,9 @@
 /* ⚠ COMANDO DE INFORMACIÓN - KARBOT-MD ⚠ */
 
 const handler = async (m, { conn, usedPrefix, command }) => {
- try {   
-   // MENSAJE SIMPLIFICADO PARA PROYECTO PRIVADO
-   const infoMsg = `╭─「 🤖 *KARBOT-MD* 🤖 」
+  try {    
+    // MENSAJE SIMPLIFICADO PARA PROYECTO PRIVADO
+    const infoMsg = `╭─「 🤖 *KARBOT-MD* 🤖 」
 │
 │ ¡Hola *${m?.name}*! 👋
 │
@@ -18,30 +18,29 @@ const handler = async (m, { conn, usedPrefix, command }) => {
 │ ➤ Wa.me/50489759545
 │
 │ ⚠ *Este es un proyecto privado*
-│   sin fines de lucro.
+│    sin fines de lucro.
 │
 ╰─「 *¡Gracias por usar KARBOT-MD!* 🙏 」`.trim();
 
-   // ENVÍO DE MENSAJE SIMPLE SIN ARCHIVOS ADJUNTOS
-   conn.sendMessage(m.chat, { 
-     text: infoMsg,
-     contextInfo: {
-       mentionedJid: conn.parseMention(infoMsg),
-       externalAdReply: {
-         mediaUrl: 'https://github.com/Yurith16/karbot-MD',
-         mediaType: 2,
-         title: '🤖 KARBOT-MD - Proyecto Privado',
-         body: 'KARBOT-MD | Asistente de WhatsApp',
-         sourceUrl: 'https://github.com/Yurith16/karbot-MD'
-       }
-     }
-   }, { quoted: m });
-   
- } catch {
-   // MENSAJE DE FALLBACK SIMPLIFICADO
-   const simpleMsg = `🤖 *KARBOT-MD* - Proyecto Privado
+    // ENVÍO DE MENSAJE SIMPLE SIN ARCHIVOS ADJUNTOS
+    conn.sendMessage(m.chat, {    
+      text: infoMsg,
+      contextInfo: {
+        mentionedJid: conn.parseMention(infoMsg),
+        externalAdReply: {
+          mediaType: 2,
+          title: '🤖 KARBOT-MD - Proyecto Privado',
+          body: 'KARBOT-MD | Asistente de WhatsApp',
+          sourceUrl: ' '
+        }
+      }
+    }, { quoted: m });
 
-¡Hola *${m?.name}*! 
+  } catch {
+    // MENSAJE DE FALLBACK SIMPLIFICADO
+    const simpleMsg = `🤖 *KARBOT-MD* - Proyecto Privado
+
+¡Hola *${m?.name}*!  
 
 ▸ *Desarrollador:* Hernandez
 ▸ *Contacto:* Wa.me/50496926150
@@ -51,9 +50,9 @@ const handler = async (m, { conn, usedPrefix, command }) => {
 🔒 *Sin fines de lucro*
 
 ¡Gracias por usar KARBOT-MD! 🙏`;
-   
-   m.reply(simpleMsg);
- }
+
+    m.reply(simpleMsg);
+  }
 };
 handler.help = ['info'];
 handler.tags = ['info'];

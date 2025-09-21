@@ -1,37 +1,66 @@
 const handler = async (m, {conn, usedPrefix, text}) => {
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.gc_demote
+  let number;
 
   if (isNaN(text) && !text.match(/@/g)) {
-
+    // No hacer nada, se manejará en el error
   } else if (isNaN(text)) {
-    var number = text.split`@`[1];
+    number = text.split`@`[1];
   } else if (!isNaN(text)) {
-    var number = text;
+    number = text;
   }
 
-  if (!text && !m.quoted) return conn.reply(m.chat, `${tradutor.texto1[0]} ${usedPrefix}quitaradmin @tag*\n*┠≽ ${usedPrefix}quitaradmin ${tradutor.texto1[1]}`, m);
-  if (number.length > 13 || (number.length < 11 && number.length > 0)) return conn.reply(m.chat, tradutor.texto2, m);
+  if (!text && !m.quoted) {
+    return conn.reply(m.chat, 
+      `❌ *DEBES ETIQUETAR A UN USUARIO*\n\n` +
+      `💡 *Ejemplos de uso:*\n` +
+      `• ${usedPrefix}quitaradmin @usuario\n` +
+      `• ${usedPrefix}quitaradmin respuesta-a-mensaje\n` +
+      `• ${usedPrefix}quitaradmin 50412345678`, 
+    m);
+  }
+
+  if (number && (number.length > 13 || (number.length < 11 && number.length > 0))) {
+    return conn.reply(m.chat, `❌ *NÚMERO INVÁLIDO*`, m);
+  }
 
   try {
+    let user;
+
     if (text) {
-      var user = number + '@s.whatsapp.net';
-    } else if (await m?.quoted?.sender) {
-      var user = await m?.quoted?.sender;
-    } else if (await m.mentionedJid) {
-      var user = number + '@s.whatsapp.net';
+      user = number + '@s.whatsapp.net';
+    } else if (m?.quoted?.sender) {
+      user = m.quoted.sender;
+    } else if (m.mentionedJid && m.mentionedJid[0]) {
+      user = m.mentionedJid[0];
+    } else {
+      throw new Error('No se pudo identificar al usuario');
     }
-  } catch (e) {
-  } finally {
-    conn.groupParticipantsUpdate(m.chat, [user], 'demote');
-    conn.reply(m.chat, tradutor.texto3, m);
+
+    await conn.groupParticipantsUpdate(m.chat, [user], 'demote');
+
+    conn.reply(m.chat, 
+      `✅ *ADMINISTRADOR REMOVIDO*\n\n` +
+      `👤 *Usuario:* @${user.split('@')[0]}\n` +
+      `⚡ *Acción realizada por:* @${m.sender.split('@')[0]}\n` +
+      `✨ *Por KARBOT-MD*`, 
+    m, { mentions: [user, m.sender] });
+
+  } catch (error) {
+    console.error(error);
+    conn.reply(m.chat, 
+      `❌ *ERROR AL REMOVER ADMINISTRADOR*\n\n` +
+      `💡 *Posibles causas:*\n` +
+      `• El usuario no es administrador\n` +
+      `• No tengo permisos suficientes\n` +
+      `• El usuario no está en el grupo\n` +
+      `• Error de conexión`, 
+    m);
   }
 };
-handler.help = ['demote'].map((v) => 'mention ' + v);
+
+handler.help = ['demote @usuario'];
 handler.tags = ['group'];
-handler.command = /^(demote|quitarpoder|quitaradmin)$/i;
+handler.command = /^(demote|quitarpoder|quitaradmin|removeradmin|quitaradm)$/i;
 handler.group = true;
 handler.admin = true;
 handler.botAdmin = true;

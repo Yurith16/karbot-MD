@@ -1,4 +1,5 @@
-// Creditos a https://pastes.io/imagen-ai
+// Creador: HERNANDEZ
+
 import axios from 'axios'
 import similarity from 'similarity'
 
@@ -108,9 +109,9 @@ let handler = async (m, { conn, command, args }) => {
   const promptLimpio = removeNormalizedTokens(input, tokensToRemove)
 
   const res = await imagen.generate(promptLimpio || input, estiloDetectado, '', 'Max')
-  if (!res.success) return m.reply(`❌ Error: ${res.result.error}`)
+  if (!res.success) return m.reply(`*❌ Ocurrió un error al generar la imagen. Inténtalo de nuevo más tarde.*`)
 
-  await conn.sendMessage(m.chat, { image: { url: res.result.url }, caption: `🖼 Prompt: ${promptLimpio || input}\n🎨 Estilo: ${estiloDetectado}` }, { quoted: m })
+  await conn.sendMessage(m.chat, { image: { url: res.result.url }, caption: `*🖼 Prompt:* ${promptLimpio || input}\n*🎨 Estilo:* ${estiloDetectado}\n\n*By KARBOT-MD*` }, { quoted: m })
 }
 
 handler.command = ['dalle', 'dall-e']

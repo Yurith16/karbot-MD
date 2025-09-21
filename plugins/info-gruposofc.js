@@ -1,11 +1,6 @@
 import fs from 'fs';
 
 const handler = async (m, {conn, usedPrefix}) => {
-  const datas = global;
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje;
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`));
-  const tradutor = _translate.plugins.info_groupsofc;
-
   // MENSAJE SIMPLIFICADO CON SOLO TU GRUPO OFICIAL
   const text = `╭─「 🛡️ *GRUPO OFICIAL KARBOT-MD* 🛡️ 」
 │
@@ -21,20 +16,19 @@ const handler = async (m, {conn, usedPrefix}) => {
 │ ▸ Reportar problemas técnicos
 │
 │ ⚠️ *Este es el único grupo oficial*
-│   de KARBOT-MD
+│    de KARBOT-MD
 │
 ╰─「 *KARBOT-MD - Soporte Comunitario* 」`.trim();
 
   // ENVÍO DE MENSAJE SIMPLE SIN ARCHIVOS ADJUNTOS
-  conn.sendMessage(m.chat, { 
+  conn.sendMessage(m.chat, {  
     text: text,
     contextInfo: {
       externalAdReply: {
-        mediaUrl: "https://github.com/Yurith16/karbot-MD",
         mediaType: 2,
         title: "🤖 KARBOT-MD - Grupo Oficial",
         body: "Únete a nuestra comunidad",
-        sourceUrl: "https://github.com/Yurith16/karbot-MD"
+        sourceUrl: " "
       }
     }
   }, { quoted: m });

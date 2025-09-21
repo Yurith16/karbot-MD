@@ -1,25 +1,24 @@
 import Presence from "baileys";
 
 const handler = async (m, {conn, args, text}) => {
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.gc_setname
-
-  if (!text) throw tradutor.texto1;
+  if (!text) throw '*⚠️ ¡Falta el nombre!*';
   try {
-    const text = args.join` `;
-    if (!args || !args[0]) {
+    const newName = args.join` `;
+    if (!newName) {
+      throw '*⚠️ ¡El nombre no puede estar vacío!*';
     } else {
-      conn.groupUpdateSubject(m.chat, text);
+      await conn.groupUpdateSubject(m.chat, newName);
+      m.reply(`*✅ ¡Nombre del grupo actualizado a: ${newName}!*`);
     }
   } catch (e) {
-    throw tradutor.texto2;
+    throw '*❗ Ocurrió un error al intentar cambiar el nombre del grupo.*';
   }
 };
+
 handler.help = ['setname <text>'];
 handler.tags = ['group'];
 handler.command = /^(setname)$/i;
 handler.group = true;
 handler.admin = true;
+
 export default handler;

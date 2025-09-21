@@ -1,19 +1,32 @@
+/* Desarrollado y Creado por: HERNANDEZ - KARBOT-MD */
+
 const handler = async (m, { command, text }) => {
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.fun_pregunta
+  const respuestas = [
+    "✨ Sí, definitivamente",
+    "✅ Es cierto",
+    "👍 Sin duda",
+    "🔮 Es seguro que sí",
+    "💫 Muy probable",
+    "❌ No, definitivamente no", 
+    "👎 Muy dudoso",
+    "🌪️ No cuentes con ello",
+    "🔍 Mejor no te lo digo ahora",
+    "⚡ Pregunta de nuevo más tarde",
+    "💭 Concéntrate y pregunta otra vez",
+    "🎯 Las señales apuntan a que sí"
+  ];
 
   m.reply(`
-${tradutor.texto1[0]}
-  
-${tradutor.texto1[1]} ${text}
-${tradutor.texto1[2]} ${[tradutor.texto1[3], tradutor.texto1[4], tradutor.texto1[5], tradutor.texto1[6], tradutor.texto1[7], tradutor.texto1[8]].getRandom()}
+🎯 *RESPUESTA DEL DESTINO* 🎯
+
+*Pregunta:* ${text}
+*Respuesta:* ${respuestas.getRandom()}
 `.trim(), null, await m.mentionedJid ? {
     mentions: await m.mentionedJid,
   } : {});
 
 }
+
 handler.help = ['pregunta <texto>?'];
 handler.tags = ['game'];
 handler.command = /^pregunta|preguntas|apakah$/i;

@@ -1,9 +1,4 @@
 const handler = async (m, {conn, args, usedPrefix, command}) => {
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.gc_config
-
   const isClose = { 
     'open': 'not_announcement',
     'close': 'announcement',
@@ -11,23 +6,36 @@ const handler = async (m, {conn, args, usedPrefix, command}) => {
     'cerrado': 'announcement',
     'abrir': 'not_announcement',
     'cerrar': 'announcement',
+    'on': 'not_announcement',
+    'off': 'announcement',
+    'activar': 'not_announcement',
+    'desactivar': 'announcement'
   }[args[0]?.toLowerCase() || ''];
 
   if (isClose === undefined) {
-    throw `${tradutor.texto1[0]}
+    throw `🔧 *CONFIGURACIÓN DE GRUPO - KARBOT-MD* 🔧
 
-${tradutor.texto1[1]}
-*┠┉↯ ${usedPrefix + command} abrir*
-*┠┉↯ ${usedPrefix + command} cerrar*`.trim();
+❌ *DEBES ESPECIFICAR UNA OPCIÓN*
+
+💡 *Opciones disponibles:*
+• ${usedPrefix + command} abrir  -  🔓 Grupo abierto
+• ${usedPrefix + command} cerrar -  🔒 Grupo cerrado
+• ${usedPrefix + command} on     -  🔓 Activado
+• ${usedPrefix + command} off    -  🔒 Desactivado`.trim();
   }
 
   await conn.groupSettingUpdate(m.chat, isClose);
-  m.reply(`${tradutor.texto1[2] || 'Configuración del grupo actualizada correctamente'}`);
+
+  if (isClose === 'not_announcement') {
+    m.reply(`✅ *GRUPO ABIERTO*\n\n🔓 *Ahora cualquier miembro puede enviar mensajes*`);
+  } else {
+    m.reply(`✅ *GRUPO CERRADO*\n\n🔒 *Solo administradores pueden enviar mensajes*`);
+  }
 };
 
-handler.help = ['group open / close'];
+handler.help = ['group open / close', 'grupo abrir / cerrar'];
 handler.tags = ['group'];
-handler.command = ['group', 'grupo'];
+handler.command = ['group', 'grupo', 'config'];
 handler.admin = true;
 handler.botAdmin = true;
 export default handler;

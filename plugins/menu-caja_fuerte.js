@@ -1,70 +1,84 @@
+/* Creador: HERNANDEZ */
 
-const handler = async (m, {conn, usedPrefix}) => {
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.menu_caja_fuerte
+import fs from 'fs';
+import fetch from 'node-fetch';
 
-  const pp = imagen4;
+const handler = async (m, { conn, usedPrefix }) => {
+  const pp = 'https://qu.ax/yZlYi.png';
+
+  const str = `╭─「 🗳️ *CAJA FUERTE KARBOT-MD* 🗳️ 」
+│
+│ ¡Hola, @${m.sender.split('@')[0]}! 👋
+│ Aquí puedes guardar y gestionar
+│ tus archivos y mensajes de forma
+│ privada dentro del bot.
+│
+│ *⭐ COMANDOS PARA AGREGAR*
+│
+│ ඬ⃟🗳️ *${usedPrefix}agregarmsg* (responde a un mensaje)
+│ ඬ⃟🗳️ *${usedPrefix}agregarvn* (responde a un audio)
+│ ඬ⃟🗳️ *${usedPrefix}agregarvideo* (responde a un video)
+│ ඬ⃟🗳️ *${usedPrefix}agregaraudio* (responde a un audio)
+│ ඬ⃟🗳️ *${usedPrefix}agregarimg* (responde a una imagen)
+│ ඬ⃟🗳️ *${usedPrefix}agregarsticker* (responde a un sticker)
+│
+│ *⭐ COMANDOS PARA VER LA LISTA*
+│
+│ ඬ⃟🗳️ *${usedPrefix}listamsg*
+│ ඬ⃟🗳️ *${usedPrefix}listavn*
+│ ඬ⃟🗳️ *${usedPrefix}listavideo*
+│ ඬ⃟🗳️ *${usedPrefix}listaaudio*
+│ ඬ⃟🗳️ *${usedPrefix}listaimg*
+│ ඬ⃟🗳️ *${usedPrefix}listasticker*
+│
+│ *⭐ COMANDOS PARA VER ARCHIVOS*
+│
+│ ඬ⃟🗳️ *${usedPrefix}vermsg* (nombre)
+│ ඬ⃟🗳️ *${usedPrefix}vervn* (nombre)
+│ ඬ⃟🗳️ *${usedPrefix}vervideo* (nombre)
+│ ඬ⃟🗳️ *${usedPrefix}veraudio* (nombre)
+│ ඬ⃟🗳️ *${usedPrefix}verimg* (nombre)
+│ ඬ⃟🗳️ *${usedPrefix}versticker* (nombre)
+│
+│ *⭐ COMANDOS PARA ELIMINAR*
+│
+│ ඬ⃟🗳️ *${usedPrefix}eliminarmsg* (nombre)
+│ ඬ⃟🗳️ *${usedPrefix}eliminarvn* (nombre)
+│ ඬ⃟🗳️ *${usedPrefix}eliminarvideo* (nombre)
+│ ඬ⃟🗳️ *${usedPrefix}eliminaraudio* (nombre)
+│ ඬ⃟🗳️ *${usedPrefix}eliminarimg* (nombre)
+│ ඬ⃟🗳️ *${usedPrefix}eliminarsticker* (nombre)
+│
+╰─「 *KARBOT-MD - Proyecto Privado* 」`.trim();
+
   try {
-  } catch (e) {
-  } finally {
-    const name = await conn.getName(m.sender);
-    const taguser = '@' + m.sender.split('@s.whatsapp.net')[0];
-    const str = `
-*ミ💖 ${tradutor.texto1[0]} ${taguser} 💖彡*
+    const contextInfo = {
+      mentionedJid: [m.sender],
+      externalAdReply: {
+        title: '🔒 CAJA FUERTE KARBOT-MD 🔒',
+        body: 'Almacenamiento privado de archivos',
+        thumbnailUrl: pp,
+        mediaType: 1,
+        sourceUrl: ' '
+      }
+    };
 
-ㅤㅤ ${tradutor.texto1[1]}
-
-${tradutor.texto1[2]}
-
-${tradutor.texto1[3]}
-
-° ඬ⃟🗳️ _${usedPrefix}agregarmsg ${tradutor.texto2[0]}
-° ඬ⃟🗳️ _${usedPrefix}agregarvn ${tradutor.texto2[1]}
-° ඬ⃟🗳️ _${usedPrefix}agregarvideo ${tradutor.texto2[2]}
-° ඬ⃟🗳️ _${usedPrefix}agregaraudio ${tradutor.texto2[3]}
-° ඬ⃟🗳️ _${usedPrefix}agregarimg ${tradutor.texto2[4]}
-° ඬ⃟🗳️ _${usedPrefix}agregarsticker ${tradutor.texto2[5]}
-
-${tradutor.texto1[4]}
-
-° ඬ⃟🗳️ _${usedPrefix}listamsg_
-° ඬ⃟🗳️ _${usedPrefix}listavn_
-° ඬ⃟🗳️ _${usedPrefix}listavideo_
-° ඬ⃟🗳️ _${usedPrefix}listaaudio_
-° ඬ⃟🗳️ _${usedPrefix}listaimg_
-° ඬ⃟🗳️ _${usedPrefix}listasticker_
-
-${tradutor.texto1[5]}
-
-° ඬ⃟🗳️ _${usedPrefix}vermsg ${tradutor.texto3[0]}
-° ඬ⃟🗳️ _${usedPrefix}vervn ${tradutor.texto3[1]}
-° ඬ⃟🗳️ _${usedPrefix}vervideo ${tradutor.texto3[2]}
-° ඬ⃟🗳️ _${usedPrefix}veraudio ${tradutor.texto3[3]}
-° ඬ⃟🗳️ _${usedPrefix}verimg ${tradutor.texto3[4]}
-° ඬ⃟🗳️ _${usedPrefix}versticker ${tradutor.texto3[5]}
-
-${tradutor.texto1[6]}
-
-° ඬ⃟🗳️ _${usedPrefix}eliminarmsg ${tradutor.texto4[0]}
-° ඬ⃟🗳️ _${usedPrefix}eliminarvn ${tradutor.texto4[1]}
-° ඬ⃟🗳️ _${usedPrefix}eliminarvideo ${tradutor.texto4[2]}
-° ඬ⃟🗳️ _${usedPrefix}eliminaraudio ${tradutor.texto4[3]}
-° ඬ⃟🗳️ _${usedPrefix}eliminarimg ${tradutor.texto4[4]}
-° ඬ⃟🗳️ _${usedPrefix}eliminarsticker ${tradutor.texto4[5]}`.trim();
     if (m.isGroup) {
-      conn.sendMessage(m.chat, {image: pp, caption: str.trim(), mentions: [...str.matchAll(/@([0-9]{5,16}|0)/g)].map((v) => v[1] + '@s.whatsapp.net')}, {quoted: m});
+      conn.sendMessage(m.chat, { image: { url: pp }, caption: str, contextInfo }, { quoted: m });
     } else {
-      const fkontak2 = {'key': {'participants': '0@s.whatsapp.net', 'remoteJid': 'status@broadcast', 'fromMe': false, 'id': 'Halo'}, 'message': {'contactMessage': {'vcard': `BEGIN:VCARD\nVERSION:3.0\nN:Sy;Bot;;;\nFN:y\nitem1.TEL;waid=${m.sender.split('@')[0]}:${m.sender.split('@')[0]}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`}}, 'participant': '0@s.whatsapp.net'};
-      conn.sendMessage(m.chat, {image: pp, caption: str.trim(), mentions: [...str.matchAll(/@([0-9]{5,16}|0)/g)].map((v) => v[1] + '@s.whatsapp.net')}, {quoted: fkontak2});
+      const fkontak2 = { 'key': { 'participants': '0@s.whatsapp.net', 'remoteJid': 'status@broadcast', 'fromMe': false, 'id': 'Halo' }, 'message': { 'contactMessage': { 'vcard': `BEGIN:VCARD\nVERSION:3.0\nN:Sy;Bot;;;\nFN:y\nitem1.TEL;waid=${m.sender.split('@')[0]}:${m.sender.split('@')[0]}\nitem1.X-ABLabel:Ponsel\nEND:VCARD` } }, 'participant': '0@s.whatsapp.net' };
+      conn.sendMessage(m.chat, { image: { url: pp }, caption: str, contextInfo }, { quoted: fkontak2 });
     }
-    // conn.sendButton(m.chat, str, wm, pp, [['𝙼𝙴𝙽𝚄 𝙿𝚁𝙸𝙽𝙲𝙸𝙿𝙰𝙻', '/menu']], m, { mentions: [m.sender] })
+  } catch (e) {
+    console.error('Error en el handler de caja fuerte:', e);
+    const fallbackText = `*❌ Ocurrió un error. Inténtalo de nuevo más tarde.*`;
+    m.reply(fallbackText);
   }
 };
+
 handler.help = ['cajafuerte'];
 handler.tags = ['owner'];
-handler.command = /^(cajafuerte)$/i;
+handler.command = /^(cajafuerte|safebox)$/i;
 handler.rowner = true;
-handler.fail = null;
+
 export default handler;

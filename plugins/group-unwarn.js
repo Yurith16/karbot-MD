@@ -1,26 +1,44 @@
-const handler = async (m, {conn, text, command, usedPrefix}) => {
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.gc_unwarn
+/* Creador: HERNANDEZ */
 
-  const pp = './src/assets/images/menu/main/warn.jpg';
+const handler = async (m, { conn, text, command, usedPrefix }) => {
+  const warntext = `*⚠️ ¡Etiqueta al usuario o responde a su mensaje para eliminarle una advertencia!*\n*Ejemplo: ${usedPrefix + command} @${global.suittag}*`;
+
+  if (!m.isGroup) throw '*❗ Este comando solo se puede usar en grupos.*';
+
   let who;
-  if (m.isGroup) who = await await m.mentionedJid[0] ? await await m.mentionedJid[0] : m.quoted ? await m?.quoted?.sender : text;
-  else who = m.chat;
+  if (m.mentionedJid && m.mentionedJid[0]) {
+    who = m.mentionedJid[0];
+  } else if (m.quoted && m.quoted.sender) {
+    who = m.quoted.sender;
+  } else if (text) {
+    who = text.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
+  } else {
+    throw warntext;
+  }
+
+  // Se añade una validación más robusta para evitar el error
+  if (who === conn.user.jid) {
+    return;
+  }
+
   const user = global.db.data.users[who];
-  const bot = global.db.data.settings[conn.user.jid] || {};
-  const warntext = `${tradutor.texto1}\n*${usedPrefix + command} @${global.suittag}*`;
-  if (!who) throw m.reply(warntext, m.chat, {mentions: conn.parseMention(warntext)});
-  if (await m.mentionedJid.includes(conn.user.jid)) return;
-  if (user.warn == 0) throw tradutor.texto2;
+  if (!user) {
+    throw '*❗ No se encontró la información de ese usuario en la base de datos.*';
+  }
+
+  if (user.warn == 0) {
+    throw '*⚠️ ¡El usuario no tiene advertencias!*';
+  }
+
   user.warn -= 1;
-  await m.reply(`${user.warn == 1 ? `*@${who.split`@`[0]}*` : `♻️ *@${who.split`@`[0]}*`}${tradutor.texto3} ${user.warn}/3*`, null, {mentions: [who]});
+  await m.reply(`*✅ Advertencia eliminada!*\n\n*@${who.split`@`[0]} ahora tiene ${user.warn}/3 advertencias.*\n\n*Recuerda que si el usuario llega a 3 advertencias, será expulsado del grupo.*`, null, { mentions: [who] });
 };
+
 handler.tags = ['group'];
 handler.help = ['unwarn'];
 handler.command = /^(unwarn|delwarn|deladvertir|deladvertencia|delwarning)$/i;
 handler.group = true;
 handler.admin = true;
 handler.botAdmin = true;
+
 export default handler;

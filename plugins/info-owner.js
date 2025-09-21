@@ -1,50 +1,23 @@
-const handler = async (m, {conn, usedPrefix}) => {
-  // INFORMACIÓN DEL PROPIETARIO - KARBOT-MD
+/* Creador: HERNANDEZ */
+
+const handler = async (m, { conn, usedPrefix }) => {
+  // INFORMACIÓN DEL PROPIETARIO REDUCIDA
   const text = `╭─「 👑 *PROPIETARIO DE KARBOT-MD* 👑 」
 │
-│ 🤖 *Bot:* KARBOT-MD
-│ 👤 *Creador y Desarrollador:* Hernandez
-│ 📅 *Desde:* 2024
-│ 🎯 *Tipo:* Proyecto Privado
+│ 👤 *Nombre:* Hernandez
+│ 📞 *Contacto:* +50496926150
 │
-│ 📞 *Contacto Directo:*
-│ ➤ WhatsApp: +50496926150
-│
-│ 🤝 *Soporte Técnico:*
-│ ➤ WhatsApp: +50489759545
-│
-│ 💼 *Disponibilidad:*
-│ ▸ Soporte: Limitado
-│ ▸ Consultas: Prioritarias
-│ ▸ Colaboraciones: Evaluables
-│
-│ 🌟 *Acerca del Desarrollador:*
-│ Desarrollador especializado en
-│ bots de WhatsApp con Node.js
-│ y sistemas automatizados.
-│
-│ ⚠️ *Importante:*
-│ Este es un proyecto privado
-│ sin fines de lucro.
-│
-│ 🔐 *Política de Contacto:*
-│ ▸ No spam
-│ ▸ Consultas técnicas específicas
-│ ▸ Respeto mutuo
-│ ▸ Horario razonable
-│
-╰─「 *KARBOT-MD - Proyecto de Hernandez* 」`.trim();
+╰─「 *KARBOT-MD* 」`.trim();
 
   // ENVÍO DE MENSAJE INFORMATIVO
-  conn.sendMessage(m.chat, { 
+  conn.sendMessage(m.chat, {
     text: text,
     contextInfo: {
       externalAdReply: {
-        mediaUrl: "https://github.com/Yurith16/karbot-MD",
         mediaType: 2,
         title: "👑 KARBOT-MD - Propietario",
         body: "Hernandez - Desarrollador Principal",
-        sourceUrl: "https://github.com/Yurith16/karbot-MD"
+        sourceUrl: " "
       }
     }
   }, { quoted: m });

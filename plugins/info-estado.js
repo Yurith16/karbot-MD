@@ -6,11 +6,6 @@ import fs from "fs";
 import { performance } from "perf_hooks";
 
 const handler = async (m, { conn, usedPrefix }) => {
-  const datas = global;
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje;
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`));
-  const tradutor = _translate.plugins.info_estado;
-
   const _uptime = process.uptime() * 1000;
   const uptime = clockString(_uptime);
   const totalusrReg = Object.values(global.db.data.users).filter((user) => user.registered == true).length;
@@ -28,8 +23,8 @@ const handler = async (m, { conn, usedPrefix }) => {
   const neww = performance.now();
   const rtime = (neww - old).toFixed(7);
   const wm = 'KARBOT-MD';
-  
-  // INFORMACIÓN ACTUALIZADA SIN DATOS DEL DUEÑO ANTERIOR
+
+  // INFORMACIÓN ACTUALIZADA
   const info = `╭─「 📊 *ESTADO DE KARBOT-MD* 📊 」
 │
 │ 🤖 *Bot:* KARBOT-MD
@@ -60,15 +55,14 @@ const handler = async (m, { conn, usedPrefix }) => {
 ╰─「 *KARBOT-MD - Proyecto Privado* 」`.trim();
 
   // ENVÍO DE MENSAJE SIMPLE DE TEXTO
-  conn.sendMessage(m.chat, { 
+  conn.sendMessage(m.chat, {  
     text: info,
     contextInfo: {
       externalAdReply: {
-        mediaUrl: "https://github.com/Yurith16/karbot-MD",
         mediaType: 2,
         title: "🤖 KARBOT-MD - Estado del Sistema",
         body: "Estado y estadísticas del bot",
-        sourceUrl: "https://github.com/Yurith16/karbot-MD"
+        sourceUrl: " "
       }
     }
   }, { quoted: m });

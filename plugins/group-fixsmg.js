@@ -4,19 +4,19 @@ import { readdirSync, unlinkSync, existsSync, promises as fs, rmSync, readFileSy
 import path from 'path';
 
 const handler = async (m, { conn, usedPrefix }) => {
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.fix_esperando_mensage
-
   if (global.conn.user.jid !== conn.user.jid) {
-    return conn.sendMessage(m.chat, {text: tradutor.texto1}, {quoted: m});
+    return conn.sendMessage(m.chat, {
+      text: `❌ *ESTE COMANDO SOLO FUNCIONA CON EL BOT PRINCIPAL*`
+    }, {quoted: m});
   }
+
   const chatId = m.isGroup ? [m.chat, m.sender] : [m.sender];
-  const sessionPath = './MysticSession/';
+  const sessionPath = './KarbotSession/';
+
   try {
     const files = await fs.readdir(sessionPath);
     let filesDeleted = 0;
+
     for (const file of files) {
       for (const id of chatId) {
         if (file.includes(id.split('@')[0])) {
@@ -26,20 +26,32 @@ const handler = async (m, { conn, usedPrefix }) => {
         }
       }
     }
+
     if (filesDeleted === 0) {
-      await conn.sendMessage(m.chat, {text: tradutor.texto2}, {quoted: m});
+      await conn.sendMessage(m.chat, {
+        text: `✅ *NO SE ENCONTRARON ARCHIVOS DE SESIÓN*\n\nNo había archivos pendientes para eliminar`
+      }, {quoted: m});
     } else {
-      await conn.sendMessage(m.chat, {text: `${tradutor.texto3[0]} ${filesDeleted} ${tradutor.texto3[1]}`}, {quoted: m});
+      await conn.sendMessage(m.chat, {
+        text: `✅ *ARCHIVOS ELIMINADOS*\n\nSe eliminaron ${filesDeleted} archivos de sesión pendientes`
+      }, {quoted: m});
     }
+
   } catch (err) {
-    console.error(tradutor.texto4, err);
-    await conn.sendMessage(m.chat, {text: tradutor.texto5}, {quoted: m});
+    console.error('Error al limpiar sesiones:', err);
+    await conn.sendMessage(m.chat, {
+      text: `❌ *ERROR AL LIMPIAR SESIONES*\n\nNo se pudieron eliminar los archivos: ${err.message}`
+    }, {quoted: m});
   }
-  await conn.sendMessage(m.chat, {text: `${tradutor.texto6} \n${usedPrefix}s\n${usedPrefix}s\n${usedPrefix}s`}, {quoted: m});
+
+  // Instrucciones para reiniciar
+  await conn.sendMessage(m.chat, {
+    text: `🔄 *REINICIA EL BOT PARA APLICAR CAMBIOS*\n\nEscribe el comando:\n${usedPrefix}s\n${usedPrefix}s\n${usedPrefix}s\n\n✨ *KARBOT-MD*`
+  }, {quoted: m});
 };
 
 handler.help = ['ds'];
 handler.tags = ['group'];
-handler.command = /^(fixmsgespera|ds)$/i;
+handler.command = /^(fixmsgespera|ds|fixsession|limpiarsesion)$/i;
 
 export default handler;
