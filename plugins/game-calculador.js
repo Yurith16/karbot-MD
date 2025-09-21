@@ -1,117 +1,143 @@
-const handler = async (m, { conn, command, text, usedPrefix }) => {
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.fun_calculador
+/* Desarrollado y Creado por: HERNANDEZ - KARBOT-MD */
 
-  if (!text) throw `${tradutor.texto26}`;
+const handler = async (m, { conn, command, text, usedPrefix }) => {
+  if (!text) throw `🎯 *INGRESA UN NOMBRE O ETIQUETA*\n*Ejemplo:* ${usedPrefix + command} @usuario`;
+
   const percentages = (500).getRandom();
   let emoji = '';
   let description = '';
+
   switch (command) {
     case 'gay2':
       emoji = '🏳️‍🌈';
       if (percentages < 50) {
-        description = `${tradutor.texto1[0]} ${text.toUpperCase()} ${tradutor.texto1[1]} ${percentages}% Gay. ${emoji}*\n${tradutor.texto1[2]}`;
+        description = `🔹 *${text.toUpperCase()} ES ${percentages}% GAY* ${emoji}\n*Resultado bajo, casi normal*`;
       } else if (percentages > 100) {
-        description = `${tradutor.texto2[0]} ${text.toUpperCase()} ${tradutor.texto2[1]} ${percentages}% Gay. ${emoji}*\n${tradutor.texto2[2]}`;
+        description = `🔥 *${text.toUpperCase()} ES ${percentages}% GAY* ${emoji}\n*¡Nivel máximo de homosexualidad!*`;
       } else {
-        description = `${tradutor.texto3[0]} ${text.toUpperCase()} ${tradutor.texto3[1]} ${percentages}% Gay. ${emoji}*\n${tradutor.texto3[2]}`;
+        description = `✨ *${text.toUpperCase()} ES ${percentages}% GAY* ${emoji}\n*Tiene un nivel moderado*`;
       }
       break;
+
     case 'lesbiana':
       emoji = '🏳️‍🌈';
       if (percentages < 50) {
-        description = `${tradutor.texto4[0]} ${text.toUpperCase()} ${tradutor.texto4[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto4[2]}`;
+        description = `🔹 *${text.toUpperCase()} ES ${percentages}% LESBIANA* ${emoji}\n*Resultado bajo, casi normal*`;
       } else if (percentages > 100) {
-        description = `${tradutor.texto5[0]} ${text.toUpperCase()} ${tradutor.texto5[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto5[2]}`;
+        description = `🔥 *${text.toUpperCase()} ES ${percentages}% LESBIANA* ${emoji}\n*¡Nivel máximo de lesbianismo!*`;
       } else {
-        description = `${tradutor.texto6[0]} ${text.toUpperCase()} ${tradutor.texto6[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto6[2]}`;
+        description = `✨ *${text.toUpperCase()} ES ${percentages}% LESBIANA* ${emoji}\n*Tiene un nivel moderado*`;
       }
       break;
+
     case 'pajero':
     case 'pajera':
       emoji = '😏💦';
       if (percentages < 50) {
-        description = `${tradutor.texto7[0]} ${text.toUpperCase()} ${tradutor.texto7[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto7[2]}`;
+        description = `🔹 *${text.toUpperCase()} ES ${percentages}% ${command.toUpperCase()}* ${emoji}\n*Poco experto en el arte*`;
       } else if (percentages > 100) {
-        description = `${tradutor.texto8[0]} ${text.toUpperCase()} ${tradutor.texto8[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto8[2]}`;
+        description = `🔥 *${text.toUpperCase()} ES ${percentages}% ${command.toUpperCase()}* ${emoji}\n*¡Maestro absoluto de la masturbación!*`;
       } else {
-        description = `${tradutor.texto9[0]} ${text.toUpperCase()} ${tradutor.texto9[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto9[2]}`;
+        description = `✨ *${text.toUpperCase()} ES ${percentages}% ${command.toUpperCase()}* ${emoji}\n*Nivel intermedio de experiencia*`;
       }
       break;
+
     case 'puto':
     case 'puta':
       emoji = '🔥🥵';
       if (percentages < 50) {
-        description = `${tradutor.texto10[0]} ${text.toUpperCase()} ${tradutor.texto10[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto10[2]}`;
+        description = `🔹 *${text.toUpperCase()} ES ${percentages}% ${command.toUpperCase()}* ${emoji}\n*Poco atrevido sexualmente*`;
       } else if (percentages > 100) {
-        description = `${tradutor.texto11[0]} ${text.toUpperCase()} ${tradutor.texto11[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto11[2]}`;
+        description = `🔥 *${text.toUpperCase()} ES ${percentages}% ${command.toUpperCase()}* ${emoji}\n*¡Expertísimo en el arte sexual!*`;
       } else {
-        description = `${tradutor.texto12[0]} ${text.toUpperCase()} ${tradutor.texto12[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto12[2]}`;
+        description = `✨ *${text.toUpperCase()} ES ${percentages}% ${command.toUpperCase()}* ${emoji}\n*Tiene sus momentos de audacia*`;
       }
       break;
+
     case 'manco':
     case 'manca':
       emoji = '💩';
       if (percentages < 50) {
-        description = `${tradutor.texto13[0]} ${text.toUpperCase()} ${tradutor.texto13[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto13[2]}`;
+        description = `🔹 *${text.toUpperCase()} ES ${percentages}% ${command.toUpperCase()}* ${emoji}\n*Casi sabe lo que hace*`;
       } else if (percentages > 100) {
-        description = `${tradutor.texto14[0]} ${text.toUpperCase()} ${tradutor.texto14[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto14[2]}`;
+        description = `🔥 *${text.toUpperCase()} ES ${percentages}% ${command.toUpperCase()}* ${emoji}\n*¡Inútil total en todo!*`;
       } else {
-        description = `${tradutor.texto15[0]} ${text.toUpperCase()} ${tradutor.texto15[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto15[2]}`;
+        description = `✨ *${text.toUpperCase()} ES ${percentages}% ${command.toUpperCase()}* ${emoji}\n*Tiene sus momentos de torpeza*`;
       }
       break;
+
     case 'rata':
       emoji = '🐁';
       if (percentages < 50) {
-        description = `${tradutor.texto16[0]} ${text.toUpperCase()} ${tradutor.texto16[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto16[2]}`;
+        description = `🔹 *${text.toUpperCase()} ES ${percentages}% RATA* ${emoji}\n*Poco agarrado con el dinero*`;
       } else if (percentages > 100) {
-        description = `${tradutor.texto17[0]} ${text.toUpperCase()} ${tradutor.texto17[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto17[2]}`;
+        description = `🔥 *${text.toUpperCase()} ES ${percentages}% RATA* ${emoji}\n*¡Rata profesional nivel dios!*`;
       } else {
-        description = `${tradutor.texto18[0]} ${text.toUpperCase()} ${tradutor.texto18[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto18[2]}`;
+        description = `✨ *${text.toUpperCase()} ES ${percentages}% RATA* ${emoji}\n*No paga la cuenta a veces*`;
       }
       break;
+
     case 'prostituto':
     case 'prostituta':
       emoji = '🫦👅';
       if (percentages < 50) {
-        description = `${tradutor.texto19[0]} ${text.toUpperCase()} ${tradutor.texto19[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto19[2]}`;
+        description = `🔹 *${text.toUpperCase()} ES ${percentages}% ${command.toUpperCase()}* ${emoji}\n*Poco experimentado en el oficio*`;
       } else if (percentages > 100) {
-        description = `${tradutor.texto20[0]} ${text.toUpperCase()} ${tradutor.texto20[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto20[2]}`;
+        description = `🔥 *${text.toUpperCase()} ES ${percentages}% ${command.toUpperCase()}* ${emoji}\n*¡Profesional del sexo por dinero!*`;
       } else {
-        description = `${tradutor.texto21[0]} ${text.toUpperCase()} ${tradutor.texto21[1]} ${percentages}% ${command}. ${emoji}*\n${tradutor.texto21[2]}`;
+        description = `✨ *${text.toUpperCase()} ES ${percentages}% ${command.toUpperCase()}* ${emoji}\n*Se defiende en el negocio*`;
       }
       break;
-      default:
-      throw `${tradutor.texto22}`;
+
+    default:
+      throw `❌ *COMANDO NO VÁLIDO*`;
   }
-  const responses = tradutor.texto23;
+
+  const responses = [
+    "¡Los resultados son 100% científicos!",
+    "Basado en estudios de la Universidad de Karbot",
+    "Este test fue aprobado por expertos",
+    "¡Confía en los datos, son reales!",
+    "Karbot-MD nunca se equivoca",
+    "Resultados verificados por inteligencia artificial"
+  ];
+
   const response = responses[Math.floor(Math.random() * responses.length)];
-  const cal = `━━━━⬣ ${tradutor.texto24} ⬣━━━━
 
-—◉ ${description}
+  const cal = `╔══════════════════════╗
+                🎯 *CALCULADORA KARBOT* 🎯
+╚══════════════════════╝
 
-*"${response}"*
+📊 ${description}
 
-━━━━⬣ ${tradutor.texto24} ⬣━━━━`.trim()  
+💡 *"${response}"*
+
+╔══════════════════════╗
+        🔮 *KARBOT-MD* 🔮
+╚══════════════════════╝`.trim();
+
   async function loading() {
-var hawemod = [
-"《 █▒▒▒▒▒▒▒▒▒▒▒》10%",
-"《 ████▒▒▒▒▒▒▒▒》30%",
-"《 ███████▒▒▒▒▒》50%",
-"《 ██████████▒▒》80%",
-"《 ████████████》100%"
-]
-   let { key } = await conn.sendMessage(m.chat, {text: `${tradutor.texto25}`, mentions: conn.parseMention(cal)}, {quoted: m})
- for (let i = 0; i < hawemod.length; i++) {
-   await new Promise(resolve => setTimeout(resolve, 1000)); 
-   await conn.sendMessage(m.chat, {text: hawemod[i], edit: key, mentions: conn.parseMention(cal)}, {quoted: m}); 
+    const hawemod = [
+      "《 █▒▒▒▒▒▒▒▒▒▒▒》10%",
+      "《 ████▒▒▒▒▒▒▒▒》30%", 
+      "《 ███████▒▒▒▒▒》50%",
+      "《 ██████████▒▒》80%",
+      "《 ████████████》100%"
+    ];
+
+    let { key } = await conn.sendMessage(m.chat, {text: `🔮 *CALCULANDO RESULTADOS...*`, mentions: conn.parseMention(cal)}, {quoted: m});
+
+    for (let i = 0; i < hawemod.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, 1000)); 
+      await conn.sendMessage(m.chat, {text: hawemod[i], edit: key, mentions: conn.parseMention(cal)}, {quoted: m}); 
+    }
+
+    await conn.sendMessage(m.chat, {text: cal, edit: key, mentions: conn.parseMention(cal)}, {quoted: m});         
   }
-  await conn.sendMessage(m.chat, {text: cal, edit: key, mentions: conn.parseMention(cal)}, {quoted: m});         
- }
-loading()    
+
+  loading()    
 };
+
 handler.help = ['gay2', 'lesbiana', 'pajero', 'pajera', 'puto', 'puta', 'manco', 'manca', 'rata', 'prostituta', 'prostituto'].map((v) => v + ' @tag | nombre');
 handler.tags = ['game'];
 handler.command = /^(gay2|lesbiana|pajero|pajera|puto|puta|manco|manca|rata|prostituta|prostituto)$/i;
