@@ -2,16 +2,14 @@ import { join, dirname } from 'path';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import { setupMaster, fork } from 'cluster';
-import cfonts from 'cfonts';
 import readline from 'readline';
 import yargs from 'yargs';
-import chalk from 'chalk'; 
-import fs from 'fs'; 
+import chalk from 'chalk';
+import fs from 'fs';
 import './config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(__dirname);
-const { say } = cfonts;
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 let isRunning = false;
 let childProcess = null;
@@ -55,17 +53,8 @@ async function start(file) {
   if (isRunning) return;
   isRunning = true;
 
-  say('The Mystic\nBot', {
-    font: 'chrome',
-    align: 'center',
-    gradient: ['red', 'magenta'],
-  });
-
-  say(`Bot creado por Bruno Sobrino`, {
-    font: 'console',
-    align: 'center',
-    gradient: ['red', 'magenta'],
-  });
+  console.log(chalk.red.bold('KARBOT-MD'));
+  console.log(chalk.magenta.bold('—◉ㅤDESARROLLADO POR HERNANDEZ'));
 
   verificarOCrearCarpetaAuth();
 
@@ -81,18 +70,18 @@ async function start(file) {
   if (opcion === '2') {
     const phoneNumber = await question(chalk.yellowBright.bold('\n—◉ㅤEscriba su número de WhatsApp:\n') + chalk.white.bold('◉ㅤEjemplo: +5219992095479\n—> '));
     const numeroTelefono = formatearNumeroTelefono(phoneNumber);
-    
+
     if (!esNumeroValido(numeroTelefono)) {
       console.log(chalk.bgRed(chalk.white.bold('[ ERROR ] Número inválido. Asegúrese de haber escrito su numero en formato internacional y haber comenzado con el código de país.\n—◉ㅤEjemplo:\n◉ +5219992095479\n')));
       process.exit(0);
     }
-    
+
     process.argv.push('--phone=' + numeroTelefono);
     process.argv.push('--method=code');
   } else if (opcion === '1') {
     process.argv.push('--method=qr');
   }
-  
+
   const args = [join(__dirname, file), ...process.argv.slice(2)];
   setupMaster({ exec: args[0], args: args.slice(1) });
   forkProcess(file);
@@ -121,7 +110,7 @@ function forkProcess(file) {
     console.log(chalk.yellow.bold(`—◉ㅤProceso secundario terminado (${code || signal})`));
     isRunning = false;
     childProcess = null;
-    
+
     if (code !== 0 || signal === 'SIGTERM') {
       console.log(chalk.yellow.bold('—◉ㅤReiniciando proceso...'));
       setTimeout(() => start(file), 1000);
