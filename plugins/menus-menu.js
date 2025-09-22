@@ -49,6 +49,10 @@ const handler = async (m, { conn, usedPrefix, __dirname, isPrems }) => {
         // Comando que tienes en tu código original
         const extrasCommands = {
             'info': [
+                `${usedPrefix}menuaudios`,
+                `${usedPrefix}menuanimes`,
+                `${usedPrefix}labiblia`,
+                `${usedPrefix}lang`,
                 `${usedPrefix}infobot`,
                 `${usedPrefix}script`,
                 `${usedPrefix}estado`,
@@ -118,11 +122,15 @@ const handler = async (m, { conn, usedPrefix, __dirname, isPrems }) => {
                 `${usedPrefix}facebook <url>`,
                 `${usedPrefix}instagram <url>`,
                 `${usedPrefix}tiktok <url>`,
+                `${usedPrefix}tiktokimg <url>`,
+                `${usedPrefix}pptiktok <usr>`,
                 `${usedPrefix}mediafire <url>`,
                 `${usedPrefix}gitclone <url>`,
                 `${usedPrefix}gdrive <url>`,
                 `${usedPrefix}twitter <url>`,
                 `${usedPrefix}ringtone <txt>`,
+                `${usedPrefix}soundcloud <txt>`,
+                `${usedPrefix}stickerpack <url>`,
                 `${usedPrefix}dapk2 <url}`
             ],
             'search': [
