@@ -1,22 +1,34 @@
-
-
-
 const handler = async (m, { conn }) => {
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.owner_chetar
+  const user = global.db.data.users[m.sender];
 
-    const user = global.db.data.users[m.sender];
-        conn.sendMessage(m.chat, {text: `*[❗] @${m.sender.split('@')[0]} ${tradutor.texto1}`, mentions: [m.sender]}, {quoted: m});
-      global.db.data.users[m.sender].money = Infinity;
-    global.db.data.users[m.sender].limit = Infinity;
-  global.db.data.users[m.sender].level = Infinity;
- global.db.data.users[m.sender].exp = Infinity;
+  // Reacción de cheat
+  try {
+    await conn.sendMessage(m.chat, {
+      react: {
+        text: '⚡',
+        key: m.key
+      }
+    });
+  } catch (reactError) {}
+
+  // Aplicar recursos infinitos
+  user.money = Infinity;
+  user.limit = Infinity;
+  user.level = Infinity;
+  user.exp = Infinity;
+
+  const cheatMessage = `⚡ *RECURSOS ILIMITADOS ACTIVADOS*\n\n👤 *Usuario:* @${m.sender.split('@')[0]}\n\n💰 *Dinero:* ∞\n💎 *Diamantes:* ∞\n⭐ *Experiencia:* ∞\n🎯 *Nivel:* ∞\n\n¡Ahora tienes recursos infinitos! 🚀`;
+
+  conn.sendMessage(m.chat, {
+    text: cheatMessage, 
+    mentions: [m.sender]
+  }, { quoted: m });
 };
+
 handler.help = ['cheat'];
 handler.tags = ['owner'];
-handler.command = /^(ilimitado|infiniy|chetar)$/i;
+handler.command = /^(ilimitado|infinity|infinito|chetar|cheat|recursosinfinitos)$/i;
 handler.rowner = true;
 handler.fail = null;
+
 export default handler;

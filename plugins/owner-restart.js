@@ -1,18 +1,53 @@
+const handler = async (m, { conn }) => {
+  if (!process.send) {
+    // Reacción de error
+    try {
+      await conn.sendMessage(m.chat, {
+        react: {
+          text: '❌',
+          key: m.key
+        }
+      });
+    } catch (reactError) {}
 
+    throw `┌──「 ❌ NO SOPORTADO 」
+│
+│ El reinicio automático no está
+│ disponible en este entorno.
+│ 
+│ 🔧 Reinicia el bot manualmente
+│ desde el panel de control.
+└──────────────`;
+  }
 
-const handler = async (m, { conn, isROwner, text }) => {
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.owner_restart
+  // Reacción de reinicio
+  try {
+    await conn.sendMessage(m.chat, {
+      react: {
+        text: '🔄',
+        key: m.key
+      }
+    });
+  } catch (reactError) {}
 
-  if (!process.send) throw tradutor.texto1;
-  // conn.readMessages([m.key])
-  await m.reply(tradutor.texto2);
+  await m.reply(`┌──「 🔄 REINICIANDO BOT 」
+│
+│ 🤖 El bot se está reiniciando...
+│ 
+│ ⏳ Esto tomará unos segundos
+│ 📱 Reconectando servicios
+│ 🔧 Actualizando procesos
+│ 
+│ ✅ Volverá en línea automáticamente
+└──────────────`);
+
+  // Enviar señal de reinicio
   process.send('reset');
 };
+
 handler.help = ['restart'];
 handler.tags = ['owner'];
-handler.command = ['restart', 'reiniciar'];
+handler.command = /^(restart|reiniciar|reboot|reinicio)$/i;
 handler.rowner = true;
+
 export default handler;

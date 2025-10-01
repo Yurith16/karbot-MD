@@ -1,58 +1,68 @@
-
 const handler = async (m, { conn }) => {
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.owner_grouplist
-
   let txt = '';
-try {    
-  const groups = Object.entries(conn.chats).filter(([jid, chat]) => jid.endsWith('@g.us') && chat.isChats);
-  const totalGroups = groups.length;
-  for (let i = 0; i < groups.length; i++) {
-    const [jid, chat] = groups[i];
-    const groupMetadata = ((conn.chats[jid] || {}).metadata || (await conn.groupMetadata(jid).catch((_) => null))) || {};
-    const participants = groupMetadata.participants || [];
-    const bot = participants.find((u) => conn.decodeJid(u.id) === conn.user.jid) || {};
-    const isBotAdmin = bot?.admin || false;
-    const isParticipant = participants.some((u) => conn.decodeJid(u.id) === conn.user.jid);
-    const participantStatus = isParticipant ? tradutor.texto1[0] : tradutor.texto1[1];
-    const totalParticipants = participants.length;
-    txt += `${tradutor.texto2[0]} ${i + 1}
-    ${tradutor.texto2[1]} ${await conn.getName(jid)}
-    ${tradutor.texto2[2]} ${jid}
-    ${tradutor.texto2[3]} ${isBotAdmin ? '✔ Sí' : '❌ No'}
-    ${tradutor.texto2[4]} ${participantStatus}
-    ${tradutor.texto2[5]} ${totalParticipants}
-    ${tradutor.texto2[6]} ${isBotAdmin ? `https://chat.whatsapp.com/${await conn.groupInviteCode(jid) || '--- (Error) ---'}` : '--- (No admin) ---'}\n\n`;
-  }
-  m.reply(`${tradutor.texto3} ${totalGroups}\n\n${txt}`.trim());
-} catch {
-  const groups = Object.entries(conn.chats).filter(([jid, chat]) => jid.endsWith('@g.us') && chat.isChats);
-  const totalGroups = groups.length;
-  for (let i = 0; i < groups.length; i++) {
-    const [jid, chat] = groups[i];
-    const groupMetadata = ((conn.chats[jid] || {}).metadata || (await conn.groupMetadata(jid).catch((_) => null))) || {};
-    const participants = groupMetadata.participants || [];
-    const bot = participants.find((u) => conn.decodeJid(u.id) === conn.user.jid) || {};
-    const isBotAdmin = bot?.admin || false;
-    const isParticipant = participants.some((u) => conn.decodeJid(u.id) === conn.user.jid);
-    const participantStatus = isParticipant ? tradutor.texto1[0] : tradutor.texto1[1];
-    const totalParticipants = participants.length;    
-    txt += `${tradutor.texto2[0]} ${i + 1}
-    ${tradutor.texto2[1]} ${await conn.getName(jid)}
-    ${tradutor.texto2[2]} ${jid}
-    ${tradutor.texto2[3]} ${isBotAdmin ? '✔ Sí' : '❌ No'}
-    ${tradutor.texto2[4]} ${participantStatus}
-    ${tradutor.texto2[5]} ${totalParticipants}
-    ${tradutor.texto2[6]} ${isBotAdmin ? '--- (Error) ---' : '--- (No admin) ---'}\n\n`;
-  }
-  m.reply(`${tradutor.texto3} ${totalGroups}\n\n${txt}`.trim());
- }    
+
+  // Reacción de carga
+  try {
+    await conn.sendMessage(m.chat, {
+      react: {
+        text: '📊',
+        key: m.key
+      }
+    });
+  } catch (reactError) {}
+
+  try {    
+    const groups = Object.entries(conn.chats).filter(([jid, chat]) => jid.endsWith('@g.us') && chat.isChats);
+    const totalGroups = groups.length;
+
+    if (totalGroups === 0) {
+      return m.reply('📭 *NO HAY GRUPOS*\n\nEl bot no se encuentra en ningún grupo actualmente.');
+    }
+
+    for (let i = 0; i < groups.length; i++) {
+      const [jid, chat] = groups[i];
+      const groupMetadata = ((conn.chats[jid] || {}).metadata || (await conn.groupMetadata(jid).catch((_) => null))) || {};
+      const participants = groupMetadata.participants || [];
+      const bot = participants.find((u) => conn.decodeJid(u.id) === conn.user.jid) || {};
+      const isBotAdmin = bot?.admin || false;
+      const isParticipant = participants.some((u) => conn.decodeJid(u.id) === conn.user.jid);
+      const participantStatus = isParticipant ? '✅ En grupo' : '❌ Fuera del grupo';
+      const totalParticipants = participants.length;
+
+      let groupName = await conn.getName(jid) || 'Grupo sin nombre';
+
+      txt += `┌──「 🏷️ GRUPO ${i + 1} 」
+│ 📝 *Nombre:* ${groupName}
+│ 🔗 *ID:* ${jid}
+│ 👑 *Bot Admin:* ${isBotAdmin ? '✅ Sí' : '❌ No'}
+│ 👥 *Participantes:* ${totalParticipants}
+│ 📍 *Estado:* ${participantStatus}
+${isBotAdmin ? `│ 🔗 *Enlace:* https://chat.whatsapp.com/${await conn.groupInviteCode(jid).catch(_ => '---')}\n` : ''}└──────────────\n\n`;
+    }
+
+    m.reply(`📊 *LISTA DE GRUPOS*\n\n*Total de grupos:* ${totalGroups}\n\n${txt}`.trim());
+
+  } catch (error) {
+    console.error('Error en listado de grupos:', error);
+
+    // Reacción de error
+    try {
+      await conn.sendMessage(m.chat, {
+        react: {
+          text: '❌',
+          key: m.key
+        }
+      });
+    } catch (reactError) {}
+
+    m.reply('❌ *ERROR AL OBTENER GRUPOS*\n\nNo se pudo obtener la lista de grupos. Intenta nuevamente.');
+  }    
 };
+
 handler.help = ['groups', 'grouplist'];
 handler.tags = ['info'];
-handler.command = /^(groups|grouplist|listadegrupo|gruposlista|listagrupos|listgroup)$/i;
+handler.command = /^(groups|grouplist|listadegrupo|gruposlista|listagrupos|listgroup|listadogrupos)$/i;
 handler.rowner = true;
-handler.private = true
+handler.private = true;
+
 export default handler;

@@ -1,27 +1,52 @@
-/* Creado por https://github.com/FG98F */
-
 const handler = async (m, {conn}) => {
- await conn.fetchBlocklist().then(async (data) => {
- const datas = global
- const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
- const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
- const tradutor = _translate.plugins.owner_blocklist
+  await conn.fetchBlocklist().then(async (data) => {
+    // Reacción de lista
+    try {
+      await conn.sendMessage(m.chat, {
+        react: {
+          text: '📋',
+          key: m.key
+        }
+      });
+    } catch (reactError) {}
 
- let txt = `${tradutor.texto1} ${data.length}\n\n┌─⊷\n`;
- for (const i of data) {
-   txt += `▢ @${i.split('@')[0]}\n`;
- }
-   txt += '└───────────';
- return conn.reply(m.chat, txt, m, {mentions: await conn.parseMention(txt)});
- }).catch((err) => {
-   console.log(err);
-   throw tradutor.texto2;  
- });
+    if (data.length === 0) {
+      return conn.reply(m.chat, 
+        `📭 *LISTA DE BLOQUEADOS VACÍA*\n\nNo hay usuarios bloqueados en este momento.`, 
+        m
+      );
+    }
+
+    let txt = `🚫 *LISTA DE BLOQUEADOS*\n\n*Total:* ${data.length} usuario(s)\n\n┌──「 📋 USUARIOS 」\n`;
+
+    for (const i of data) {
+      txt += `│ ▸ @${i.split('@')[0]}\n`;
+    }
+
+    txt += '└──────────────';
+
+    return conn.reply(m.chat, txt, m, {mentions: await conn.parseMention(txt)});
+
+  }).catch((err) => {
+    console.log(err);
+
+    // Reacción de error
+    try {
+      await conn.sendMessage(m.chat, {
+        react: {
+          text: '❌',
+          key: m.key
+        }
+      });
+    } catch (reactError) {}
+
+    throw '❌ *ERROR AL OBTENER LISTA*\n\nNo se pudo obtener la lista de usuarios bloqueados.';  
+  });
 };
 
 handler.help = ['blocklist'];
 handler.tags = ['owner'];
-handler.command = ['blocklist', 'listblock'];
+handler.command = /^(blocklist|listabloqueados|listablock|listabloqueos)$/i;
 handler.rowner = true;
 
 export default handler;

@@ -1,28 +1,43 @@
-// Codigo hecho para The Mystic - Bot - MD por https://github.com/BrunoSobrino
-// By @BrunoSobrino
 import axios from 'axios';
 const { proto, generateWAMessageFromContent, generateWAMessageContent } = (await import("baileys")).default;
 
-let handler = async (message, { conn, text }) => {
-    if (!text) return conn.sendMessage(message.chat, { text: '[❗] ¿Qué quieres buscar en TikTok?' }, { quoted: message });
-    
+let handler = async (m, { conn, text, usedPrefix, command }) => {
+    // Sistema de reacción - indicar procesamiento
+    await conn.sendMessage(m.chat, { react: { text: '🔍', key: m.key } });
+
+    if (!text) {
+        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
+        return conn.sendMessage(m.chat, { 
+            text: `*❌ FALTA EL TÉRMINO DE BÚSQUEDA*\n\n_Escribe lo que quieres buscar en TikTok después del comando_\n\n*Ejemplo:*\n*${usedPrefix + command} bailes trending*` 
+        }, { quoted: m });
+    }
+
     try {
-        const processingMsg = await conn.sendMessage(message.chat, { text: '*[🔍] Buscando en TikTok, espere...*' }, { quoted: message });
+        // Reacción de búsqueda
+        await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } });
+
+        const processingMsg = await conn.sendMessage(m.chat, { 
+            text: '*[🔍] Buscando en TikTok, espere...*' 
+        }, { quoted: m });
+
         let response = await tiktokSearch(text);
         if (!response.status) throw new Error(response.resultado);
+
         let searchResults = response.resultado;
-        if (searchResults.length === 0) throw new Error('*[❗] No se encontraron videos válidos de tiktok.*');
+        if (searchResults.length === 0) throw new Error('*❌ No se encontraron videos válidos de TikTok.*');
+
         let selectedResults = getRandomElements(searchResults, Math.min(searchResults.length, 10));
-        
+
         const BATCH_SIZE = 2;
         const RETRY_ATTEMPTS = 2;
         let videoMessages = [];
         let successfulCount = 0;
+
         for (let i = 0; i < selectedResults.length; i += BATCH_SIZE) {
             const batch = selectedResults.slice(i, i + BATCH_SIZE);
             for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt++) {
                 try {
-                    const batchMessages = await Promise.all(batch.map(result => createVideoMessage(result.videoUrl, conn) ));
+                    const batchMessages = await Promise.all(batch.map(result => createVideoMessage(result.videoUrl, conn)));
                     videoMessages.push(...batchMessages);
                     successfulCount += batchMessages.length;
                     break; 
@@ -33,11 +48,15 @@ let handler = async (message, { conn, text }) => {
                 }
             }
         }
+
         const validVideos = videoMessages.filter(Boolean);
-        if (validVideos.length === 0) throw new Error('*[❗] No se pudieron cargar los videos.*');
+        if (validVideos.length === 0) throw new Error('*❌ No se pudieron cargar los videos.*');
+
         const results = validVideos.map((videoMessage, index) => ({
             body: proto.Message.InteractiveMessage.Body.fromObject({ text: '' }),
-            footer: proto.Message.InteractiveMessage.Footer.fromObject({ text: `*❧ By ${global.wm}*`.trim() }),
+            footer: proto.Message.InteractiveMessage.Footer.fromObject({ 
+                text: `*🤖 ${global.wm}*`.trim() 
+            }),
             header: proto.Message.InteractiveMessage.Header.fromObject({
                 title: selectedResults[index].description || "Video de TikTok",
                 hasMediaAttachment: true,
@@ -45,8 +64,8 @@ let handler = async (message, { conn, text }) => {
             }),
             nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.fromObject({ buttons: [] })
         }));
-        
-        const responseMessage = generateWAMessageFromContent(message.chat, {
+
+        const responseMessage = generateWAMessageFromContent(m.chat, {
             viewOnceMessage: {
                 message: {
                     messageContextInfo: {
@@ -55,9 +74,11 @@ let handler = async (message, { conn, text }) => {
                     },
                     interactiveMessage: proto.Message.InteractiveMessage.fromObject({
                         body: proto.Message.InteractiveMessage.Body.create({ 
-                            text: `*< TIKTOK SEARCH >*\n\n📌 *Texto buscado:* ${text}`
+                            text: `*🎵 BÚSQUEDA EN TIKTOK*\n\n*🔍 Texto buscado:* ${text}\n*📹 Videos encontrados:* ${validVideos.length}` 
                         }),
-                        footer: proto.Message.InteractiveMessage.Footer.create({ text: '' }),
+                        footer: proto.Message.InteractiveMessage.Footer.create({ 
+                            text: '✨ KARBOT-MD - Buscador de TikTok' 
+                        }),
                         header: proto.Message.InteractiveMessage.Header.create({ hasMediaAttachment: false }),
                         carouselMessage: proto.Message.InteractiveMessage.CarouselMessage.fromObject({ 
                             cards: results 
@@ -65,26 +86,34 @@ let handler = async (message, { conn, text }) => {
                     })
                 }
             }
-        }, { quoted: message });
+        }, { quoted: m });
 
-        await conn.sendMessage(message.chat, { delete: processingMsg.key });
-        await conn.relayMessage(message.chat, responseMessage.message, { messageId: responseMessage.key.id });
-        
+        await conn.sendMessage(m.chat, { delete: processingMsg.key });
+
+        // Reacción de éxito
+        await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
+
+        await conn.relayMessage(m.chat, responseMessage.message, { messageId: responseMessage.key.id });
+
     } catch (error) {
-        await conn.sendMessage(message.chat, { 
-            text: `❌ Error: ${error.message}` 
-        }, { quoted: message });
+        // Reacción de error
+        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
+
+        await conn.sendMessage(m.chat, { 
+            text: `*❌ ERROR EN TIKTOK SEARCH*\n\n_${error.message}_` 
+        }, { quoted: m });
     }
 };
 
-handler.help = ['tiktoksearch <txt>'];
+handler.help = ['tiktoksearch <texto>'];
 handler.tags = ['search'];
-handler.command = /^(tiktoksearch|tiktoks)$/i;
+handler.command = /^(tiktoksearch|tiktoks|buscartiktok|tiktok)$/i;
 export default handler;
 
 async function tiktokSearch(query, maxRetries = 3) {
     let retries = 0;
     let lastError = null;
+
     while (retries < maxRetries) {
         try {
             const response = await axios.post("https://tikwm.com/api/feed/search", 
@@ -101,6 +130,7 @@ async function tiktokSearch(query, maxRetries = 3) {
                 },
                 timeout: 10000
             });
+
             const videos = response.data?.data?.videos || [];
             if (videos.length === 0) {
                 retries++;
@@ -108,6 +138,7 @@ async function tiktokSearch(query, maxRetries = 3) {
                 await new Promise(resolve => setTimeout(resolve, 1000 * retries));
                 continue;
             }
+
             return {
                 status: true,
                 resultado: videos.map(v => ({
@@ -115,22 +146,39 @@ async function tiktokSearch(query, maxRetries = 3) {
                     videoUrl: v.play ? v.play : (v.wmplay || v.hdplay || "Sin URL")
                 })).filter(v => v.videoUrl !== "Sin URL") 
             };
+
         } catch (error) {
             retries++;
             lastError = error.message;
             await new Promise(resolve => setTimeout(resolve, 1000 * retries));
         }
     }
-    return { status: false, resultado: lastError || "Error después de varios intentos" };
+
+    return { 
+        status: false, 
+        resultado: lastError || "Error después de varios intentos" 
+    };
 }
 
 async function createVideoMessage(url, conn, timeout = 15000) {
     try {
-        const response = await axios.get(url, { responseType: 'arraybuffer', timeout: timeout });
-        if (!response.data || response.data.length === 0) throw new Error('Video vacío o no disponible');
-        const { videoMessage } = await generateWAMessageContent({ video: response.data }, { upload: conn.waUploadToServer });
+        const response = await axios.get(url, { 
+            responseType: 'arraybuffer', 
+            timeout: timeout 
+        });
+
+        if (!response.data || response.data.length === 0) {
+            throw new Error('Video vacío o no disponible');
+        }
+
+        const { videoMessage } = await generateWAMessageContent(
+            { video: response.data }, 
+            { upload: conn.waUploadToServer }
+        );
+
         return videoMessage;
     } catch (error) {
+        console.error('Error creando mensaje de video:', error.message);
         return null;
     }
 }

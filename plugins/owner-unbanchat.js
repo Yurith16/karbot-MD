@@ -1,15 +1,33 @@
-
 const handler = async (m) => {
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.owner_unbanchat
-
   global.db.data.chats[m.chat].isBanned = false;
-  m.reply(tradutor.texto1);
+
+  // Reacción de éxito
+  try {
+    await conn.sendMessage(m.chat, {
+      react: {
+        text: '✅',
+        key: m.key
+      }
+    });
+  } catch (reactError) {}
+
+  const message = `
+┌──「 ✅ CHAT DESBANEADO 」
+│
+│ 💬 *Chat:* ${m.chat}
+│ 🎯 *Estado:* Desbaneado exitosamente
+│ 
+│ 🔓 Este chat puede volver a usar el bot
+│ 
+│ 🤖 ¡Todos los comandos están disponibles!
+└──────────────`.trim();
+
+  m.reply(message);
 };
+
 handler.help = ['unbanchat'];
 handler.tags = ['owner'];
-handler.command = /^unbanchat$/i;
+handler.command = /^unbanchat|desbanearchat|activarchat$/i;
 handler.rowner = true;
+
 export default handler;

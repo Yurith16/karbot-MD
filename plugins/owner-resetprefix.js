@@ -1,19 +1,35 @@
-
-
 const handler = async (m, {conn}) => {
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.owner_resetprefix
+  // Restablecer el prefijo al valor por defecto
+  const defaultPrefix = '.';
+  global.prefix = new RegExp('^[' + (defaultPrefix).replace(/[|\\{}()[\]^$+*?.\-\^]/g, '\\$&') + ']');
 
-  global.prefix = new RegExp('^[' + (opts['prefix'] || '‎xzXZ/i!#$%+£¢€¥^°=¶∆×÷π√✓©®:;?&.\\-').replace(/[|\\{}()[\]^$+*?.\-\^]/g, '\\$&') + ']');
-  await m.reply(tradutor.texto1);
-  // conn.fakeReply(m.chat, '[❗𝐈𝐍𝐅𝐎❗] 𝙿𝚁𝙴𝙵𝙸𝙹𝙾 𝚁𝙴𝚂𝚃𝙰𝙱𝙻𝙴𝙲𝙸𝙳𝙾 𝙲𝙾𝙽 𝙴𝚇𝙸𝚃𝙾', '0@s.whatsapp.net', 'Reset Prefix')
+  // Reacción de éxito
+  try {
+    await conn.sendMessage(m.chat, {
+      react: {
+        text: '✅',
+        key: m.key
+      }
+    });
+  } catch (reactError) {}
+
+  await m.reply(`┌──「 ✅ PREFIJO RESTABLECIDO 」
+│
+│ 🔧 *Prefijo actual:* ${defaultPrefix}
+│ 
+│ 💡 Ahora usa los comandos así:
+│ ➺ ${defaultPrefix}menu
+│ ➺ ${defaultPrefix}help  
+│ ➺ ${defaultPrefix}ping
+│ 
+│ ⚙️ Prefijo restablecido al valor
+│ por defecto del bot
+└──────────────`);
 };
+
 handler.help = ['resetprefix'];
 handler.tags = ['owner'];
-handler.command = /^(resetprefix)$/i;
+handler.command = /^(resetprefix|restablecerprefijo|prefijodefecto)$/i;
 handler.rowner = true;
-
 
 export default handler;

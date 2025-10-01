@@ -1,42 +1,97 @@
 const handler = async (m, { conn }) => {
-  const datas = global;
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje;
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`));
-  const tradutor = _translate.plugins.owner_banchat;
+  // Reacción de proceso
+  try {
+    await conn.sendMessage(m.chat, {
+      react: {
+        text: '🚫',
+        key: m.key
+      }
+    });
+  } catch (reactError) {}
 
-  const normalizeJid = (jid) => jid.split('@')[0];
   const thisBot = conn.user.jid;
 
-  const testi = await await m.mentionedJid
-  if (testi && testi.length > 0) {
-    const mentionedBot = testi[0];
-    console.log(m)
-    console.log(mentionedBot)
-    
-    if (normalizeJid(mentionedBot) !== normalizeJid(thisBot)) return;
+  // Verificar si se mencionó a un bot específico
+  if (m.mentionedJid && m.mentionedJid.length > 0) {
+    const mentionedBot = m.mentionedJid[0];
+
+    // Solo permitir banear al bot actual
+    if (mentionedBot !== thisBot) {
+      // Reacción de error
+      try {
+        await conn.sendMessage(m.chat, {
+          react: {
+            text: '❌',
+            key: m.key
+          }
+        });
+      } catch (reactError) {}
+
+      return m.reply('❌ *SOLO PUEDES BANEAR AL BOT ACTUAL*\n\nSolo puedes banear a este bot del chat.');
+    }
 
     if (global.db.data.chats[m.chat].isBanned) {
-      m.reply('⚠️ Este chat ya está baneado.');
-      return;
+      // Reacción de información
+      try {
+        await conn.sendMessage(m.chat, {
+          react: {
+            text: 'ℹ️',
+            key: m.key
+          }
+        });
+      } catch (reactError) {}
+
+      return m.reply('ℹ️ *CHAT YA BANEADO*\n\nEste chat ya estaba baneado anteriormente.');
     }
 
     global.db.data.chats[m.chat].isBanned = true;
-    m.reply(`✅ Bot ${conn.user.name || 'actual'} baneado específicamente de este chat.`);
-    return;
+
+    // Reacción de éxito
+    try {
+      await conn.sendMessage(m.chat, {
+        react: {
+          text: '✅',
+          key: m.key
+        }
+      });
+    } catch (reactError) {}
+
+    return m.reply(`✅ *CHAT BANEADO*\n\nEl bot *${conn.user.name || 'actual'}* ha sido baneado de este chat.\n\n🚫 Ya no responderá a comandos aquí.`);
   }
 
+  // Banear chat normal (sin mención específica)
   if (global.db.data.chats[m.chat].isBanned) {
-    m.reply('⚠️ Este chat ya está baneado.');
-    return;
+    // Reacción de información
+    try {
+      await conn.sendMessage(m.chat, {
+        react: {
+          text: 'ℹ️',
+          key: m.key
+        }
+      });
+    } catch (reactError) {}
+
+    return m.reply('ℹ️ *CHAT YA BANEADO*\n\nEste chat ya estaba baneado anteriormente.');
   }
 
   global.db.data.chats[m.chat].isBanned = true;
-  m.reply(tradutor.texto1 || '✅ Chat baneado exitosamente.');
+
+  // Reacción de éxito
+  try {
+    await conn.sendMessage(m.chat, {
+      react: {
+        text: '✅',
+        key: m.key
+      }
+    });
+  } catch (reactError) {}
+
+  m.reply('✅ *CHAT BANEADO*\n\nEste chat ha sido baneado exitosamente.\n\n🚫 El bot ya no responderá a comandos aquí.');
 };
 
 handler.help = ['banchat', 'banchat @bot'];
 handler.tags = ['owner'];
-handler.command = /^banchat$/i;
+handler.command = /^banchat|banearchat|bloquearchat$/i;
 handler.rowner = true;
-export default handler;
 
+export default handler;
