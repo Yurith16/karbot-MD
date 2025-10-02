@@ -1,193 +1,105 @@
-/* Desarrollado y Creado por: HERNANDEZ - KARBOT-MD */
-
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 
 let handler = async (m, { args, conn, text, usedPrefix, command }) => {
-    // Sistema de reacción - Indicar que el comando fue detectado
-    await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } });
+  // Sistema de reacción - Indicar que el comando fue detectado
+  await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } });
 
-    if (!text) {
-        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-        throw `*📱 DESCARGADOR DE FACEBOOK*\n\n*🚫 Uso incorrecto:*\n*${usedPrefix + command} <url_de_facebook>*\n\n*💡 Ejemplos:*\n*${usedPrefix + command}* https://facebook.com/watch?v=123456\n*${usedPrefix + command}* https://fb.watch/abc123\n*${usedPrefix + command}* https://facebook.com/share/v/12DoEUCoFji/`;
-    }
+  if (!text) throw `_*📱 DESCARGADOR DE FACEBOOK*_\n\n*🚫 Uso incorrecto:*\n\n*💡 Ejemplo:* ${usedPrefix + command} https://www.facebook.com/share/v/1E5R3gRuHk/`;
 
-    // Validar URL de Facebook
-    if (!isValidFacebookUrl(text)) {
-        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-        throw `*❌ URL NO RECONOCIDA*\n\nEl enlace proporcionado no parece ser de Facebook. Por favor, asegúrate de que sea un enlace válido de un video.`;
-    }
+    const platform = 'facebook';
+    // Admite: ('tiktok' & 'instagram')
 
     try {
         // Cambiar reacción a "procesando"
         await conn.sendMessage(m.chat, { react: { text: '📥', key: m.key } });
 
-        // Intentar con múltiples APIs en orden
-        let videoData = null;
-        let apiUsed = '';
+        const links = await fetchDownloadLinks(text, platform, conn, m);
+        if (!links) return;
 
-        // API 1: Dorratz API (Primaria)
-        try {
-            const response = await axios.get(`https://api.dorratz.com/fbvideo?url=${encodeURIComponent(text)}`, {
-                timeout: 15000
-            });
-            if (response.data && response.data.url) {
-                videoData = response.data;
-                apiUsed = 'API Dorratz';
-            }
-        } catch (error) {
-            console.log('API Dorratz falló, intentando siguiente...');
+        if (links.length === 0) {
+          await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
+          return await conn.sendMessage(m.chat, { text: '*[ ❌ ] No se encontraron enlaces de descarga.*' }, { quoted: m });
         }
 
-        // API 2: Dorratz API V2 (Secundaria)
-        if (!videoData) {
-            try {
-                const response = await axios.get(`https://api.dorratz.com/v3/fb2?url=${encodeURIComponent(text)}`, {
-                    timeout: 15000
-                });
-                if (response.data && response.data.url) {
-                    videoData = response.data;
-                    apiUsed = 'API Dorratz V2';
+        let download = getDownloadLink(platform, links);
+
+        if (!download) {
+          await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
+          return await conn.sendMessage(m.chat, { text: '*[ ❌ ] Error al obtener el enlace de descarga.*' }, { quoted: m });
+        }
+
+        if (Array.isArray(download)) {
+            for (const media of download) {
+                try {
+                    await conn.sendMessage(m.chat, { image: { url: media }, caption: `*[📥] Instagram Downloader*\n${media}` }, { quoted: m });
+                } catch (err) {
+                    console.log(`Error enviando ${media}:`, err.message);
                 }
-            } catch (error) {
-                console.log('API Dorratz V2 falló, intentando siguiente...');
             }
-        }
-
-        // API 3: InstaTikTok Scraper (Respaldo)
-        if (!videoData) {
+        } else {
             try {
-                const links = await fetchDownloadLinks(text, 'facebook', conn, m);
-                if (links && links.length > 0) {
-                    const downloadUrl = links.at(-1);
-                    if (downloadUrl) {
-                        videoData = { url: downloadUrl, quality: 'HD', api: 'InstaTikTok' };
-                        apiUsed = 'Scraper InstaTikTok';
-                    }
+                const ext = download.includes('.mp4') ? 'mp4' : 'jpg';
+                const caption = `*📥 Descarga de ${platform} exitosa!*`;
+
+                // Reacción de éxito
+                await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
+
+                if (ext === 'mp4') {
+                    await conn.sendMessage(m.chat, { video: { url: download }, caption: caption }, { quoted: m });
+                } else {
+                    await conn.sendMessage(m.chat, { image: { url: download }, caption: caption }, { quoted: m });
                 }
-            } catch (error) {
-                console.log('Scraper InstaTikTok falló...');
+            } catch (err) {
+              await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
+              return await conn.sendMessage(m.chat, { text: `*[❌] Error al enviar el archivo:* ${err.message}` }, { quoted: m });
             }
         }
-
-        // API 4: API alternativa (Último recurso)
-        if (!videoData) {
-            try {
-                const response = await axios.get(`https://api.xcteam.xyz/api/downloader/facebook?url=${encodeURIComponent(text)}`, {
-                    timeout: 15000
-                });
-                if (response.data && response.data.result && response.data.result.hd) {
-                    videoData = { url: response.data.result.hd, quality: 'HD', api: 'XC Team' };
-                    apiUsed = 'API XC Team';
-                }
-            } catch (error) {
-                console.log('API XC Team falló...');
-            }
-        }
-
-        if (!videoData || !videoData.url) {
-            await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-            throw `*❌ ERROR AL DESCARGAR*\n\nNo se pudo obtener el video. Posibles causas:\n• El video es privado\n• El enlace ha expirado\n• El video fue eliminado\n• Límite de reproducciones alcanzado`;
-        }
-
-        const videoUrl = videoData.url;
-        const quality = videoData.quality || videoData.resolution || 'Calidad disponible';
-        const caption = `*✅ DESCARGADO DE FACEBOOK*\n\n*📊 Calidad:* ${quality}\n*🔧 API usada:* ${apiUsed}\n*⬇️ Enviando video...*`;
-
-        // Reacción de éxito
-        await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
-
-        // Enviar el video
-        await conn.sendMessage(m.chat, {
-            video: { url: videoUrl },
-            mimetype: 'video/mp4',
-            caption: caption
-        }, { quoted: m });
 
     } catch (error) {
         // Reacción de error
         await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-        console.log('Error en facebook downloader:', error);
-
-        let errorMessage = `*❌ ERROR AL PROCESAR*\n\n`;
-        if (error.message.includes('timeout')) {
-            errorMessage += `*⏰ Tiempo de espera agotado.* Los servidores están saturados.`;
-        } else if (error.message.includes('404')) {
-            errorMessage += `*🔍 Video no encontrado.* Puede haber sido eliminado o ser privado.`;
-        } else {
-            errorMessage += `*💻 Error técnico:* ${error.message}`;
-        }
-
-        errorMessage += `\n\n*💡 Intenta con otro enlace o verifica que el video sea público.*`;
-
-        await conn.reply(m.chat, errorMessage, m);
+        console.log('Error en downloader:', error);
+        return await conn.sendMessage(m.chat, { text: `*[❌] Ocurrió un error:*\n${error.message || error}` }, { quoted: m });
     }
 };
 
-// Función para validar URL de Facebook (MEJORADA)
-function isValidFacebookUrl(url) {
-    const facebookPatterns = [
-        /https?:\/\/(www\.|m\.)?facebook\.com\/.*\/videos\/\d+/i,
-        /https?:\/\/(www\.|m\.)?facebook\.com\/.*\/video\.php\?v=\d+/i,
-        /https?:\/\/(www\.|m\.)?facebook\.com\/watch\/?\?v=\d+/i,
-        /https?:\/\/(www\.|m\.)?fb\.watch\/[a-zA-Z0-9_-]+/i,
-        /https?:\/\/(www\.|m\.)?facebook\.com\/share\/v\/[a-zA-Z0-9_-]+\//i,
-        /https?:\/\/(www\.|m\.)?facebook\.com\/share\/r\/[a-zA-Z0-9_-]+\//i,
-        /https?:\/\/(www\.|m\.)?facebook\.com\/reel\/[a-zA-Z0-9_-]+/i,
-        /https?:\/\/(www\.|m\.)?facebook\.com\/.*\/posts\/.*video.*/i,
-        /https?:\/\/(www\.|m\.)?facebook\.com\/.*\/story\.php\?.*video/i,
-        /https?:\/\/(www\.|m\.)?facebook\.com\/photo\.php\?.*video/i,
-        /https?:\/\/(www\.|m\.)?facebook\.com\/groups\/.*\/permalink\/.*video/i,
-        /https?:\/\/(www\.|m\.)?facebook\.com\/events\/.*\/permalink\/.*video/i,
-        /https?:\/\/(www\.|m\.)?facebook\.com\/.*\/.*video.*/i,
-        /https?:\/\/(www\.|m\.)?facebook\.com\/.*[?&]video.*/i,
-        /https?:\/\/(www\.|m\.)?fb\.com\/.*video.*/i,
-        /https?:\/\/(web\.)?facebook\.com\/.*video.*/i,
-        /https?:\/\/fb\.com\/.*\/videos\/\d+/i,
-        /https?:\/\/facebook\.com\/.*\/videos\/\d+/i,
-        /https?:\/\/www\.facebook\.com\/.*\/videos\/\d+/i,
-        /https?:\/\/m\.facebook\.com\/.*\/videos\/\d+/i
-    ];
-    return facebookPatterns.some(pattern => pattern.test(url));
-}
+handler.command = /^(facebook|fb|facebookdl|fbdl|facebook2|fb2|facebookdl2|fbdl2|facebook3|fb3|facebookdl3|fbdl3|facebook4|fb4|facebookdl4|fbdl4|facebook5|fb5|facebookdl5|fbdl5)$/i;
+handler.tags = ['downloader'];
+handler.help = ['facebook'];
+export default handler;
 
-// Función del scraper original (mantenida como respaldo)
 async function fetchDownloadLinks(text, platform, conn, m) {
     const { SITE_URL, form } = createApiRequest(text, platform);
 
-    try {
-        const res = await axios.post(`${SITE_URL}api`, form.toString(), {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                'Origin': SITE_URL,
-                'Referer': SITE_URL,
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            timeout: 15000
-        });
-
-        const html = res?.data?.html;
-
-        if (!html || res?.data?.status !== 'success') {
-            return null;
+    const res = await axios.post(`${SITE_URL}api`, form.toString(), {
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'Origin': SITE_URL,
+            'Referer': SITE_URL,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'X-Requested-With': 'XMLHttpRequest'
         }
+    });
 
-        const $ = cheerio.load(html);
-        const links = [];
+    const html = res?.data?.html;
 
-        $('a.btn[href^="http"]').each((_, el) => {
-            const link = $(el).attr('href');
-            if (link && !links.includes(link)) {
-                links.push(link);
-            }
-        });
-
-        return links;
-    } catch (error) {
-        console.log('Error en scraper:', error);
+    if (!html || res?.data?.status !== 'success') {
+        await conn.sendMessage(m.chat, { text: '*[❌] Error al obtener datos del servidor.*' }, { quoted: m });
         return null;
     }
+
+    const $ = cheerio.load(html);
+    const links = [];
+
+    $('a.btn[href^="http"]').each((_, el) => {
+        const link = $(el).attr('href');
+        if (link && !links.includes(link)) {
+            links.push(link);
+        }
+    });
+
+    return links;
 }
 
 function createApiRequest(text, platform) {
@@ -199,7 +111,13 @@ function createApiRequest(text, platform) {
     return { SITE_URL, form };
 }
 
-handler.command = /^(facebook|fb|facebookdl|fbdl|face|fbd|fbdll|face2|fb2|fbd2)$/i;
-handler.tags = ['downloader'];
-handler.help = ['facebook <url>'];
-export default handler;
+function getDownloadLink(platform, links) {
+    if (platform === 'instagram') {
+        return links;
+    } else if (platform === 'tiktok') {
+        return links.find(link => /hdplay/.test(link)) || links[0];
+    } else if (platform === 'facebook') {
+        return links.at(-1);
+    }
+    return null;
+}

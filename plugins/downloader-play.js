@@ -1,37 +1,29 @@
-/* Desarrollado y Creado por: HERNANDEZ - KARBOT-MD */
-
 import yts from 'yt-search';
 
 let handler = async (m, { conn, args, text, usedPrefix, command }) => {
   // Sistema de reacción - Indicar que el comando fue detectado
   await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } });
 
-  const datas = global;
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje;
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`));
-  const tradutor = _translate.plugins.descargas_play;
+  if (!text) throw `🎵 *INGRESE EL NOMBRE O ENLACE DE YOUTUBE*\n\n*Ejemplo:*\n${usedPrefix + command} música relajante\n${usedPrefix + command} https://youtube.com/...`;      
 
-  if (!text) throw `🎵 *INGRESE EL NOMBRE O ENLACE DE YOUTUBE*\n*Ejemplo:* ${usedPrefix + command} música relajante`;      
-
-  let additionalText = '';
+  let downloadType = '';
   if (['play'].includes(command)) {
-    additionalText = 'audio';
+    downloadType = 'audio';
   } else if (['play2'].includes(command)) {
-    additionalText = 'vídeo';
+    downloadType = 'vídeo';
   }
 
   // Cambiar reacción a "buscando"
   await conn.sendMessage(m.chat, { react: { text: '🔍', key: m.key } });
 
-  const regex = "https://youtube.com/watch?v=";
   const result = await search(args.join(' '));
 
   if (!result) {
     await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-    throw `❌ *NO SE ENCONTRÓ EL VIDEO: ${text}*`;
+    throw `❌ *NO SE ENCONTRÓ EL VIDEO:* ${text}`;
   }
 
-  const body = `🎬 *INFORMACIÓN DEL VIDEO*\n
+  const body = `🎬 *INFORMACIÓN DEL VIDEO - KARBOT-MD*\n
 🔹 *Título:* ${result.title}
 🔹 *Publicado:* ${result.ago}
 🔹 *Duración:* ${result.duration.timestamp}
@@ -40,14 +32,18 @@ let handler = async (m, { conn, args, text, usedPrefix, command }) => {
 🔹 *ID:* ${result.videoId}
 🔹 *Tipo:* ${result.type}
 🔹 *URL:* ${result.url}
-🔹 *Canal URL:* ${result.author.url}
 
-📥 *Descargando ${additionalText}, por favor espere...*`.trim();
+📥 *Descargando ${downloadType}, por favor espere...*`.trim();
 
-  conn.sendMessage(m.chat, { image: { url: result.thumbnail }, caption: body }, { quoted: m });
+  await conn.sendMessage(m.chat, { 
+    image: { url: result.thumbnail }, 
+    caption: body 
+  }, { quoted: m });
 
   // Cambiar reacción a "descargando"
   await conn.sendMessage(m.chat, { react: { text: '📥', key: m.key } });
+
+  const regex = "https://youtube.com/watch?v=";
 
   if (command === 'play') {
     try {
@@ -57,19 +53,19 @@ let handler = async (m, { conn, args, text, usedPrefix, command }) => {
       // Cambiar reacción a "enviando audio"
       await conn.sendMessage(m.chat, { react: { text: '🎵', key: m.key } });
 
-      conn.sendMessage(m.chat, { 
+      await conn.sendMessage(m.chat, { 
         audio: { url: downloader }, 
         mimetype: "audio/mpeg",
-        fileName: `KARBOT-${result.title.substring(0, 50)}.mp3`
+        fileName: `KARBOT-${result.title.substring(0, 50).replace(/[^\w\s]/gi, '')}.mp3`
       }, { quoted: m });
 
-      // Reacción de éxito
+      // Reacción de éxito final
       await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
 
     } catch (error) {
-      console.log(error);
+      console.log('Error descargando audio:', error);
       await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-      throw `❌ *ERROR AL DESCARGAR EL AUDIO*`;
+      throw `❌ *ERROR AL DESCARGAR EL AUDIO*\n\nEl video puede ser muy largo o estar restringido.`;
     }
   }
 
@@ -81,33 +77,38 @@ let handler = async (m, { conn, args, text, usedPrefix, command }) => {
       // Cambiar reacción a "enviando video"
       await conn.sendMessage(m.chat, { react: { text: '🎥', key: m.key } });
 
-      conn.sendMessage(m.chat, { 
+      await conn.sendMessage(m.chat, { 
         video: { url: downloader }, 
         mimetype: "video/mp4",
-        fileName: `KARBOT-${result.title.substring(0, 50)}.mp4`
+        fileName: `KARBOT-${result.title.substring(0, 50).replace(/[^\w\s]/gi, '')}.mp4`
       }, { quoted: m });
 
-      // Reacción de éxito
+      // Reacción de éxito final
       await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
 
     } catch (error) {
-      console.log(error);
+      console.log('Error descargando video:', error);
       await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-      throw `❌ *ERROR AL DESCARGAR EL VIDEO*`;
+      throw `❌ *ERROR AL DESCARGAR EL VIDEO*\n\nEl video puede ser muy largo, estar restringido o ser de alta resolución.`;
     }
   }
 };
 
 handler.help = ['play', 'play2'];
 handler.tags = ['downloader'];
-//handler.command = ['play', 'play2'];
+handler.command = /^(play|play2)$/i;
 
 export default handler;
 
 async function search(query, options = {}) {
   try {
-    const search = await yts.search({query, hl: 'es', gl: 'ES', ...options});
-    return search.videos[0];
+    const search = await yts.search({
+      query, 
+      hl: 'es', 
+      gl: 'ES', 
+      ...options
+    });
+    return search.videos.length > 0 ? search.videos[0] : null;
   } catch (error) {
     console.error('Error en búsqueda YouTube:', error);
     return null;
@@ -115,5 +116,5 @@ async function search(query, options = {}) {
 }
 
 function formatNumber(num) {
-  return num.toLocaleString();
+  return num.toLocaleString('es-ES');
 }
