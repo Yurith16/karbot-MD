@@ -57,7 +57,7 @@ const handler = async (m, {conn, text}) => {
   }
 };
 
-handler.command = /^(out|leavegc|leave|salirdelgrupo|salirgrupo|botout)$/i;
+handler.command = /^(out|leavegc|leave|salirdelgrupo|salir|botout)$/i;
 handler.group = true;
 handler.rowner = true;
 handler.help = ['leavegc'];

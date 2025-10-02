@@ -54,7 +54,7 @@ const handler = async (m, { conn, text, args, usedPrefix, command }) => {
         throw `${tradutor.texto9}`;
     }
 };
-handler.command = /^(tiktok|ttdl|tiktokdl|tiktoknowm|tt|ttnowm|tiktokaudio)$/i;
+handler.command = /^(tiktok|tk|tiktokdl|tiktoknowm|tt|ttnowm|tiktokaudio)$/i;
 export default handler;
 
 async function fetchDownloadLinks(text, platform, conn, m) {
