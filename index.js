@@ -2,14 +2,16 @@ import { join, dirname } from 'path';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import { setupMaster, fork } from 'cluster';
+import cfonts from 'cfonts';
 import readline from 'readline';
 import yargs from 'yargs';
-import chalk from 'chalk';
-import fs from 'fs';
+import chalk from 'chalk'; 
+import fs from 'fs'; 
 import './config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(__dirname);
+const { say } = cfonts;
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 let isRunning = false;
 let childProcess = null;
@@ -53,8 +55,17 @@ async function start(file) {
   if (isRunning) return;
   isRunning = true;
 
-  console.log(chalk.red.bold('KARBOT-MD'));
-  console.log(chalk.magenta.bold('—◉ㅤDESARROLLADO POR HERNANDEZ'));
+  say('The Mystic\nBot', {
+    font: 'chrome',
+    align: 'center',
+    gradient: ['red', 'magenta'],
+  });
+
+  say(`Bot creado por Bruno Sobrino`, {
+    font: 'console',
+    align: 'center',
+    gradient: ['red', 'magenta'],
+  });
 
   verificarOCrearCarpetaAuth();
 

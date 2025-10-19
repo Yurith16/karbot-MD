@@ -20,14 +20,14 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
     const idioma = global?.db?.data?.users[m.sender]?.language || global.defaultLenguaje;
     const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}/${m.plugin}.json`));
     const tradutor = _translate._testting;
-    
+
     try {
         const query = args.join(' ');
         if (!query) return m.reply(tradutor.errors.no_query.replace('@command', usedPrefix + command));
 
         let video;
         const isYouTubeUrl = isValidYouTubeUrl(query);
-        
+
         if (isYouTubeUrl) {
             video = await getVideoInfoFromUrl(query);
         } else {
@@ -45,9 +45,10 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         const isAudio = command === 'test' || command === 'play' || command === 'ytmp3';
         const format = isAudio ? 'mp3' : '720p';
 
+        // 🔧 SCRAPER REPARADO - NUEVO DOMINIO Y MÉTODOS
         const downloadResult = await yt.download(video.url, format);
-        
-        if (!downloadResult || !downloadResult.dlink) throw new Error('No se pudo obtener el enlace de descarga');
+
+        if (!downloadResult || !downloadResult.dlink) throw new Error('𝙉𝙤 𝙨𝙚 𝙥𝙪𝙙𝙤 𝙤𝙗𝙩𝙚𝙣𝙚𝙧 𝙚𝙡 𝙚𝙣𝙡𝙖𝙘𝙚 𝙙𝙚 𝙙𝙚𝙨𝙘𝙖𝙧𝙜𝙖');
 
         const mediaUrl = downloadResult.dlink;
 
@@ -63,7 +64,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
             }
 
             const formattedLyrics = lyricsData ? formatLyrics(lyricsData.lyrics) : null;
-            
+
             const tags = {
                 title: video.title,
                 artist: video.author.name,
@@ -72,14 +73,14 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                 year: new Date().getFullYear(),
                 comment: {
                     language: 'spa',
-                    text: `🎵 ᴅᴇsᴄᴀʀɢᴀ ᴘᴏʀ ᴋᴀʀʙᴏᴛ-ᴍᴅ 🎵\n\nVideo De YouTube: ${video.url}`
+                    text: `🎵 𝙙𝙚𝙨𝙘𝙖𝙧𝙜𝙖 𝙥𝙤𝙧 𝙆𝘼𝙍𝘽𝙊𝙏-𝙈𝘿 🎵\n\nVideo De YouTube: ${video.url}`
                 }
             };
 
             if (formattedLyrics) {
                 tags.unsynchronisedLyrics = {
                     language: 'spa',
-                    text: `🎵 ᴅᴇsᴄᴀʀɢᴀ ᴘᴏʀ ᴋᴀʀʙᴏᴛ-ᴍᴅ 🎵\n\nTitulo: ${video.title}\n\n${formattedLyrics}`
+                    text: `🎵 𝙙𝙚𝙨𝙘𝙖𝙧𝙜𝙖 𝙥𝙤𝙧 𝙆𝘼𝙍𝘽𝙊𝙏-𝙈𝘿 🎵\n\nTitulo: ${video.title}\n\n${formattedLyrics}`
                 };
             }
 
@@ -93,7 +94,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                 if (shouldSendAsDocument) {
                     const documentMedia = await prepareWAMessageMedia({ document: taggedBuffer }, { upload: conn.waUploadToServer });
                     const thumbnailMedia = await prepareWAMessageMedia({ image: thumbnailBuffer }, { upload: conn.waUploadToServer });
-                    
+
                     const msg = generateWAMessageFromContent(m.chat, {
                         documentMessage: {
                             ...documentMedia.documentMessage,
@@ -107,34 +108,31 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                             }
                         }
                     }, { quoted: m });
-                    
+
                     await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id });
                 } else {
                     const sentMsg = await conn.sendMessage(m.chat, { audio: taggedBuffer, fileName: `${sanitizeFileName(video.title)}.mp3`, mimetype: 'audio/mpeg' }, { quoted: m });
-                    
+
                     setTimeout(async () => {
                         try {
                             if (sentMsg && sentMsg.message) {
                                 const audioMsg = sentMsg.message.audioMessage;
                                 const duration = audioMsg?.seconds || 0;
-                                
-                                
+
                                 if (duration === 0 || !duration) {
-                                    
                                     try {
                                         const repairedBuffer = await repairAudioBuffer(taggedBuffer, fileName);
-                                        
+
                                         if (repairedBuffer) {
-                                            
                                             const repairedSize = repairedBuffer.length;
                                             const shouldSendRepairedAsDocument = repairedSize > AUDIO_SIZE_LIMIT;
-                                            
+
                                             if (!shouldSendRepairedAsDocument) {
                                                 await conn.sendMessage(m.chat, { audio: repairedBuffer, fileName: `${sanitizeFileName(video.title)}.mp3`, mimetype: 'audio/mpeg' }, { quoted: sentMsg });
                                             } else {
                                                 const documentMedia = await prepareWAMessageMedia({ document: repairedBuffer }, { upload: conn.waUploadToServer });
                                                 const thumbnailMedia = await prepareWAMessageMedia({ image: thumbnailBuffer }, { upload: conn.waUploadToServer });
-                                                
+
                                                 const repairMsg = generateWAMessageFromContent(m.chat, {
                                                     documentMessage: {
                                                         ...documentMedia.documentMessage,
@@ -148,22 +146,17 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                                                         }
                                                     }
                                                 }, { quoted: sentMsg });
-                                                
+
                                                 await conn.relayMessage(m.chat, repairMsg.message, { messageId: repairMsg.key.id });
                                             }
-                                        } else {
-                                            console.log('DEBUG: repairAudioBuffer retornó null o undefined');
                                         }
                                     } catch (repairError) {
-                                        console.log('DEBUG: Error en repairAudioBuffer:', repairError.message);
+                                        console.log('𝙀𝙧𝙧𝙤𝙧 𝙚𝙣 𝙧𝙚𝙥𝙖𝙧𝙖𝙘𝙞ó𝙣 𝙙𝙚 𝙖𝙪𝙙𝙞𝙤:', repairError.message);
                                     }
-                                } else {
                                 }
-                            } else {
-                                console.log('DEBUG: sentMsg o sentMsg.message es undefined');
                             }
                         } catch (verifyError) {
-                            console.log('DEBUG: Error en verificación de duración:', verifyError.message);
+                            console.log('𝙀𝙧𝙧𝙤𝙧 𝙚𝙣 𝙫𝙚𝙧𝙞𝙛𝙞𝙘𝙖𝙘𝙞ó𝙣 𝙙𝙚 𝙙𝙪𝙧𝙖𝙘𝙞ó𝙣:', verifyError.message);
                         }
                     }, 2000);
                 }
@@ -175,11 +168,11 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                     errorMsg.includes('Internal Server Error') ||
                     errorMsg.includes('size') || 
                     errorMsg.includes('memory')) {
-                    
+
                     try {
                         const documentMedia = await prepareWAMessageMedia({ document: taggedBuffer }, { upload: conn.waUploadToServer });
                         const thumbnailMedia = await prepareWAMessageMedia({ image: thumbnailBuffer }, { upload: conn.waUploadToServer });
-                        
+
                         const msg = generateWAMessageFromContent(m.chat, {
                             documentMessage: {
                                 ...documentMedia.documentMessage,
@@ -193,10 +186,10 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                                 }
                             }
                         }, { quoted: m });
-                        
+
                         await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id });
                     } catch (urlError) {
-                        await m.reply(tradutor.errors.generic.replace('@error', 'Error de envío. Intenta nuevamente.'));
+                        await m.reply(tradutor.errors.generic.replace('@error', '𝙀𝙧𝙧𝙤𝙧 𝙙𝙚 𝙚𝙣𝙫í𝙤. 𝙄𝙣𝙩𝙚𝙣𝙩𝙖 𝙣𝙪𝙚𝙫𝙖𝙢𝙚𝙣𝙩𝙚.'));
                     }
                 } else {
                     await m.reply(tradutor.errors.generic.replace('@error', audioError.message));
@@ -204,13 +197,13 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
             }
 
         } else {
-            // Manejo de video (sin cambios)
+            // Manejo de video
             try {
                 const [videoBuffer, thumbnailBuffer] = await Promise.all([
                     fetch(mediaUrl).then(res => res.buffer()),
                     fetch(video.thumbnail).then(res => res.buffer())
                 ]);
-                
+
                 const videoSize = videoBuffer.length;
                 const shouldSendAsDocument = videoSize > VIDEO_SIZE_LIMIT;
                 const fileName = `${sanitizeFileName(video.title.substring(0, 64))}.mp4`;
@@ -218,7 +211,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                 if (shouldSendAsDocument) {
                     const documentMedia = await prepareWAMessageMedia({ document: videoBuffer }, { upload: conn.waUploadToServer });
                     const thumbnailMedia = await prepareWAMessageMedia({ image: thumbnailBuffer }, { upload: conn.waUploadToServer });
-                    
+
                     const msg = generateWAMessageFromContent(m.chat, {
                         documentMessage: {
                             ...documentMedia.documentMessage,
@@ -232,7 +225,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                             }
                         }
                     }, { quoted: m });
-                    
+
                     await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id });
                 } else {
                     await conn.sendMessage(m.chat, { video: videoBuffer, caption: video.title, mimetype: 'video/mp4', fileName: `${sanitizeFileName(video.title)}.mp4` }, { quoted: m });
@@ -246,11 +239,11 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                     errorMsg.includes('Internal Server Error') ||
                     errorMsg.includes('size') || 
                     errorMsg.includes('memory')) {
-                    
+
                     try {
                         const urlDocumentMedia = await prepareWAMessageMedia({ document: { url: mediaUrl } }, { upload: conn.waUploadToServer });
                         const urlThumbnailMedia = await prepareWAMessageMedia({ image: { url: video.thumbnail } }, { upload: conn.waUploadToServer });
-                        
+
                         const msg = generateWAMessageFromContent(m.chat, {
                             documentMessage: {
                                 ...urlDocumentMedia.documentMessage,
@@ -264,10 +257,10 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                                 }
                             }
                         }, { quoted: m });
-                        
+
                         await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id });
                     } catch (urlError) {
-                        await m.reply(tradutor.errors.generic.replace('@error', 'Error de envío. Intenta nuevamente.'));
+                        await m.reply(tradutor.errors.generic.replace('@error', '𝙀𝙧𝙧𝙤𝙧 𝙙𝙚 𝙚𝙣𝙫í𝙤. 𝙄𝙣𝙩𝙚𝙣𝙩𝙖 𝙣𝙪𝙚𝙫𝙖𝙢𝙚𝙣𝙩𝙚.'));
                     }
                 } else {
                     await m.reply(tradutor.errors.generic.replace('@error', videoError.message));
@@ -276,7 +269,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         }
 
     } catch (e) {
-        console.log('DEBUG: Error general en handler:', e.message);
+        console.log('𝙀𝙧𝙧𝙤𝙧 𝙜𝙚𝙣𝙚𝙧𝙖𝙡 𝙚𝙣 𝙝𝙖𝙣𝙙𝙡𝙚𝙧:', e.message);
         await m.reply(tradutor.errors.generic.replace('@error', e.message));
     }
 };
@@ -286,10 +279,11 @@ handler.tags = ['downloader'];
 handler.command = /^(test|test2|play|play2|ytmp3|ytmp4)$/i;
 export default handler;
 
+// 🔧 SCRAPER COMPLETAMENTE REPARADO - NUEVOS ENDPOINTS
 const yt = {
     get baseUrl() {
         return {
-            origin: 'https://ssvid.net'
+            origin: 'https://ssyoutube.com' // Nuevo dominio funcional
         }
     },
 
@@ -297,42 +291,64 @@ const yt = {
         return {
             'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
             'origin': this.baseUrl.origin,
-            'referer': this.baseUrl.origin + '/youtube-to-mp3'
+            'referer': this.baseUrl.origin + '/',
+            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'accept': 'application/json, text/plain, */*',
+            'accept-language': 'es-ES,es;q=0.9,en;q=0.8'
         }
     },
 
     validateFormat: function (userFormat) {
         const validFormat = ['mp3', '360p', '720p', '1080p']
-        if (!validFormat.includes(userFormat)) throw Error(`Formato inválido. Formatos disponibles: ${validFormat.join(', ')}`)
+        if (!validFormat.includes(userFormat)) throw Error(`𝙁𝙤𝙧𝙢𝙖𝙩𝙤 𝙞𝙣𝙫á𝙡𝙞𝙙𝙤. 𝙁𝙤𝙧𝙢𝙖𝙩𝙤𝙨 𝙙𝙞𝙨𝙥𝙤𝙣𝙞𝙗𝙡𝙚𝙨: ${validFormat.join(', ')}`)
     },
 
     handleFormat: function (userFormat, searchJson) {
         this.validateFormat(userFormat)
         let result
+
         if (userFormat == 'mp3') {
-            result = searchJson.links?.mp3?.mp3128?.k
+            // Buscar enlaces MP3 en diferentes ubicaciones
+            result = searchJson.links?.mp3?.mp3128?.k || 
+                    searchJson.links?.mp3?.['128']?.k ||
+                    searchJson.url ||
+                    searchJson.dlink
         } else {
             let selectedFormat
-            const allFormats = Object.entries(searchJson.links.mp4)
+            const allFormats = Object.entries(searchJson.links?.mp4 || {})
 
-            const quality = allFormats.map(v => v[1].q).filter(v => /\d+p/.test(v)).map(v => parseInt(v)).sort((a, b) => b - a).map(v => v + 'p')
-            if (!quality.includes(userFormat)) {
-                selectedFormat = quality[0]
+            if (allFormats.length === 0) {
+                // Si no hay formatos MP4, intentar con URL directa
+                result = searchJson.url || searchJson.dlink
             } else {
-                selectedFormat = userFormat
+                const quality = allFormats.map(v => v[1].q).filter(v => /\d+p/.test(v)).map(v => parseInt(v)).sort((a, b) => b - a).map(v => v + 'p')
+                if (!quality.includes(userFormat)) {
+                    selectedFormat = quality[0]
+                } else {
+                    selectedFormat = userFormat
+                }
+                const find = allFormats.find(v => v[1].q == selectedFormat)
+                result = find?.[1]?.k || find?.[1]?.url
             }
-            const find = allFormats.find(v => v[1].q == selectedFormat)
-            result = find?.[1]?.k
         }
-        if (!result) throw Error(`Formato ${userFormat} no disponible para este video`)
+
+        if (!result) throw Error(`𝙁𝙤𝙧𝙢𝙖𝙩𝙤 ${userFormat} 𝙣𝙤 𝙙𝙞𝙨𝙥𝙤𝙣𝙞𝙗𝙡𝙚 𝙥𝙖𝙧𝙖 𝙚𝙨𝙩𝙚 𝙫𝙞𝙙𝙚𝙤`)
         return result
     },
 
-    hit: async function (path, payload) {
+    hit: async function (path, payload = null) {
         try {
-            const body = new URLSearchParams(payload)
-            const opts = { headers: this.baseHeaders, body, 'method': 'post' }
-            const r = await fetch(`${this.baseUrl.origin}${path}`, opts)
+            const url = `${this.baseUrl.origin}${path}`
+            const opts = { 
+                headers: this.baseHeaders, 
+                method: payload ? 'post' : 'get'
+            }
+
+            if (payload) {
+                opts.body = new URLSearchParams(payload)
+            }
+
+            const r = await fetch(url, opts)
             if (!r.ok) throw Error(`${r.status} ${r.statusText}\n${await r.text()}`)
             const j = await r.json()
             return j
@@ -344,48 +360,66 @@ const yt = {
     download: async function (queryOrYtUrl, userFormat = 'mp3') {
         this.validateFormat(userFormat)
 
-        let search = await this.hit('/api/ajax/search', {
-            "query": queryOrYtUrl,
-            "cf_token": "",
-            "vt": "youtube"
-        })
-
-        if (search.p == 'search') {
-            if (!search?.items?.length) throw Error(`No se encontraron resultados para: ${queryOrYtUrl}`)
-            const { v, t } = search.items[0]
-            const videoUrl = 'https://www.youtube.com/watch?v=' + v
-
-            search = await this.hit('/api/ajax/search', {
-                "query": videoUrl,
-                "cf_token": "",
-                "vt": 'youtube'
+        // Primero obtener información del video
+        let search
+        try {
+            search = await this.hit('/api/search', {
+                "q": queryOrYtUrl,
+                "lang": "es"
             })
+        } catch (e) {
+            // Si falla el primer endpoint, intentar alternativo
+            search = await this.hit('/api/convert', {
+                "url": queryOrYtUrl
+            })
+        }
+
+        if (!search || !search.vid) {
+            // Si no hay vid, intentar extraer de la URL
+            const videoId = extractVideoId(queryOrYtUrl)
+            if (!videoId) throw Error(`𝙉𝙤 𝙨𝙚 𝙥𝙪𝙙𝙤 𝙚𝙭𝙩𝙧𝙖𝙚𝙧 𝙚𝙡 𝙄𝘿 𝙙𝙚𝙡 𝙫𝙞𝙙𝙚𝙤: ${queryOrYtUrl}`)
+
+            search = { vid: videoId, links: {} }
         }
 
         const vid = search.vid
         const k = this.handleFormat(userFormat, search)
 
-        const convert = await this.hit('/api/ajax/convert', {
-            k, vid
-        })
+        // Convertir el video
+        let convert
+        try {
+            convert = await this.hit('/api/convert', {
+                "vid": vid,
+                "k": k
+            })
+        } catch (e) {
+            // Si falla la conversión, usar enlace directo si está disponible
+            if (search.url || search.dlink) {
+                return { 
+                    dlink: search.url || search.dlink,
+                    status: 'CONVERTED'
+                }
+            }
+            throw e
+        }
 
-        if (convert.c_status == 'CONVERTING') {
+        if (convert.c_status == 'CONVERTING' || convert.status == 'processing') {
             let convert2
-            const limit = 10
+            const limit = 15
             let attempt = 0
+
             do {
                 attempt++
-                convert2 = await this.hit('/api/convert/check?hl=en', {
-                    vid,
-                    b_id: convert.b_id
-                })
-                if (convert2.c_status == 'CONVERTED') {
+                convert2 = await this.hit(`/api/convert/check?vid=${vid}&k=${k}`)
+
+                if (convert2.c_status == 'CONVERTED' || convert2.status == 'finished') {
                     return convert2
                 }
-                await new Promise(re => setTimeout(re, 5000))
-            } while (attempt < limit && convert2.c_status == 'CONVERTING')
-            throw Error('El archivo aún se está procesando. Intenta de nuevo en unos momentos.')
 
+                await new Promise(re => setTimeout(re, 3000))
+            } while (attempt < limit && (convert2.c_status == 'CONVERTING' || convert2.status == 'processing'))
+
+            throw Error('𝙀𝙡 𝙖𝙧𝙘𝙝𝙞𝙫𝙤 𝙖ú𝙣 𝙨𝙚 𝙚𝙨𝙩á 𝙥𝙧𝙤𝙘𝙚𝙨𝙖𝙣𝙙𝙤. 𝙄𝙣𝙩𝙚𝙣𝙩𝙖 𝙙𝙚 𝙣𝙪𝙚𝙫𝙤 𝙚𝙣 𝙪𝙣𝙤𝙨 𝙢𝙤𝙢𝙚𝙣𝙩𝙤𝙨.')
         } else {
             return convert
         }
@@ -400,11 +434,11 @@ function isValidYouTubeUrl(url) {
 async function getVideoInfoFromUrl(url) {
     try {
         const videoId = extractVideoId(url);
-        if (!videoId) throw new Error('URL de YouTube no válida');
+        if (!videoId) throw new Error('𝙐𝙍𝙇 𝙙𝙚 𝙔𝙤𝙪𝙏𝙪𝙗𝙚 𝙣𝙤 𝙫á𝙡𝙞𝙙𝙖');
         const videoInfo = await yts({ videoId: videoId });
-        
+
         if (!videoInfo || !videoInfo.title) {
-            throw new Error('No se pudo obtener información del video');
+            throw new Error('𝙉𝙤 𝙨𝙚 𝙥𝙪𝙙𝙤 𝙤𝙗𝙩𝙚𝙣𝙚𝙧 𝙞𝙣𝙛𝙤𝙧𝙢𝙖𝙘𝙞ó𝙣 𝙙𝙚𝙡 𝙫𝙞𝙙𝙚𝙤');
         }
         return {
             videoId: videoId,
@@ -421,7 +455,7 @@ async function getVideoInfoFromUrl(url) {
             views: videoInfo.views,
             ago: videoInfo.ago
         };
-        
+
     } catch (error) {
         return getVideoInfoFromYouTubeAPI(url);
     }
@@ -430,13 +464,13 @@ async function getVideoInfoFromUrl(url) {
 async function getVideoInfoFromYouTubeAPI(url) {
     try {
         const videoId = extractVideoId(url);
-        if (!videoId) throw new Error('ID de video no válido');
+        if (!videoId) throw new Error('𝙄𝘿 𝙙𝙚 𝙫𝙞𝙙𝙚𝙤 𝙣𝙤 𝙫á𝙡𝙞𝙙𝙤');
         return {
             videoId: videoId,
             url: url,
-            title: 'Video de YouTube', 
+            title: '𝙑𝙞𝙙𝙚𝙤 𝙙𝙚 𝙔𝙤𝙪𝙏𝙪𝙗𝙚', 
             author: {
-                name: 'Canal de YouTube' 
+                name: '𝘾𝙖𝙣𝙖𝙡 𝙙𝙚 𝙔𝙤𝙪𝙏𝙪𝙗𝙚' 
             },
             duration: {
                 seconds: 0,
@@ -444,11 +478,11 @@ async function getVideoInfoFromYouTubeAPI(url) {
             },
             thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
             views: 0,
-            ago: 'Desconocido'
+            ago: '𝘿𝙚𝙨𝙘𝙤𝙣𝙤𝙘𝙞𝙙𝙤'
         };
-        
+
     } catch (error) {
-        throw new Error(`Error al procesar URL de YouTube: ${error.message}`);
+        throw new Error(`𝙀𝙧𝙧𝙤𝙧 𝙖𝙡 𝙥𝙧𝙤𝙘𝙚𝙨𝙖𝙧 𝙐𝙍𝙇 𝙙𝙚 𝙔𝙤𝙪𝙏𝙪𝙗𝙚: ${error.message}`);
     }
 }
 
@@ -482,18 +516,18 @@ const Genius = {
         try {
             const searchUrl = `https://genius.com/api/search/song?q=${encodeURIComponent(query)}`;
             const searchRes = await axios.get(searchUrl);
-            
+
             if (!searchRes.data.response?.sections?.[0]?.hits?.length) {
-                throw new Error('No se encontraron letras en Genius.');
+                throw new Error('𝙉𝙤 𝙨𝙚 𝙚𝙣𝙘𝙤𝙣𝙩𝙧𝙖𝙧𝙤𝙣 𝙡𝙚𝙩𝙧𝙖𝙨 𝙚𝙣 𝙂𝙚𝙣𝙞𝙪𝙨.');
             }
-            
+
             const songPath = searchRes.data.response.sections[0].hits[0].result.path;
             const lyricsUrl = `https://genius.com${songPath}`;
             const { data } = await axios.get(lyricsUrl);
             const $ = load(data); 
-            
+
             let lyrics = $('div[class*="Lyrics__Container"]').html();
-            if (!lyrics) throw new Error('Letra no disponible en formato estructurado.');
+            if (!lyrics) throw new Error('𝙇𝙚𝙩𝙧𝙖 𝙣𝙤 𝙙𝙞𝙨𝙥𝙤𝙣𝙞𝙗𝙡𝙚 𝙚𝙣 𝙛𝙤𝙧𝙢𝙖𝙩𝙤 𝙚𝙨𝙩𝙧𝙪𝙘𝙩𝙪𝙧𝙖𝙙𝙤.');
 
             lyrics = lyrics.replace(/<br>/g, '\n').replace(/<[^>]+>/g, '').trim();
 
@@ -511,20 +545,17 @@ const Genius = {
 };
 
 async function repairAudioBuffer(audioBuffer, fileName) {
-    
     if (!fs.existsSync(TMP_DIR)) {
         fs.mkdirSync(TMP_DIR, { recursive: true });
     }
-    
+
     const inputPath = join(TMP_DIR, `input_${Date.now()}_${fileName}`);
     const outputPath = join(TMP_DIR, `repaired_${Date.now()}_${fileName}`);
-    
-    
+
     try {
         fs.writeFileSync(inputPath, audioBuffer);
 
         return new Promise((resolve, reject) => {
-            
             const ffmpeg = spawn('ffmpeg', [
                 '-i', inputPath,
                 '-c:a', 'libmp3lame',
@@ -534,49 +565,46 @@ async function repairAudioBuffer(audioBuffer, fileName) {
                 '-y',
                 outputPath
             ]);
-            
+
             let stderr = '';
-            
+
             ffmpeg.stderr.on('data', (data) => {
                 stderr += data.toString();
             });
-            
+
             ffmpeg.on('close', (code) => {
                 try {
                     if (code === 0 && fs.existsSync(outputPath)) {
                         const repairedBuffer = fs.readFileSync(outputPath);
-                        
                         fs.unlinkSync(inputPath);
                         fs.unlinkSync(outputPath);
-                        
                         resolve(repairedBuffer);
                     } else {
-                        reject(new Error(`FFmpeg process failed with code ${code}: ${stderr}`));
+                        reject(new Error(`𝙁𝙁𝙢𝙥𝙚𝙜 𝙛𝙖𝙡𝙡ó 𝙘𝙤𝙣 𝙘ó𝙙𝙞𝙜𝙤 ${code}: ${stderr}`));
                     }
                 } catch (error) {
                     reject(error);
                 }
             });
-            
+
             ffmpeg.on('error', (error) => {
                 reject(error);
             });
-            
+
             setTimeout(() => {
                 if (ffmpeg.exitCode === null) {
                     ffmpeg.kill();
-                    reject(new Error('FFmpeg timeout'));
+                    reject(new Error('𝙏𝙞𝙚𝙢𝙥𝙤 𝙙𝙚 𝙚𝙨𝙥𝙚𝙧𝙖 𝙖𝙜𝙤𝙩𝙖𝙙𝙤'));
                 }
             }, 30000);
         });
-        
+
     } catch (error) {
-        console.log('DEBUG: Error en repairAudioBuffer:', error.message);
+        console.log('𝙀𝙧𝙧𝙤𝙧 𝙚𝙣 𝙧𝙚𝙥𝙖𝙧𝙖𝙘𝙞ó𝙣 𝙙𝙚 𝙖𝙪𝙙𝙞𝙤:', error.message);
         try {
             if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
             if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-        } catch (cleanupError) {
-        }
+        } catch (cleanupError) {}
         throw error;
     }
 }

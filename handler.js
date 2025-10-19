@@ -220,6 +220,7 @@ export async function handler(chatUpdate) {
           kerjadua: 0,
           kerjaduabelas: 0,
           kerjaduadelapan: 0,
+          kerjaduadua: 0,
           kerjaduaempat: 0,
           kerjaduaenam: 0,
           kerjadualima: 0,
@@ -658,7 +659,7 @@ export async function handler(chatUpdate) {
     }
 
     const idioma = global.db.data.users[m.sender]?.language || global.defaultLenguaje; // is null? np the operator ?? fix that (i hope)
-    const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`, 'utf-8'))
+    const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
     const tradutor = _translate.handler.handler
 
     if (opts['nyimak']) {
@@ -739,7 +740,7 @@ export async function handler(chatUpdate) {
             }
           }*/
           const md5c = fs.readFileSync('./plugins/' + m.plugin);
-          /*fetch('https://karbot-md.cloud:2083/error', {
+          /*fetch('https://themysticbot.cloud:2083/error', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ number: conn.user.jid, plugin: m.plugin, command: `${m.text}`, reason: format(e), md5: mddd5(md5c) }),
@@ -833,7 +834,10 @@ export async function handler(chatUpdate) {
 
             if (user.bannedMessageCount < 3) {
               const messageNumber = user.bannedMessageCount + 1;
-              const messageText = `*🚫 USUARIO BANEADO*\n\n*Mensaje ${messageNumber}/3*\n ${user.bannedReason ? `*Razón:* ${user.bannedReason}` : `*No se especificó razón*`}\n *Contacta al soporte para más información*`.trim();
+              const messageText = `${tradutor.texto1[0]}
+${tradutor.texto1[1]} ${messageNumber}/3
+ ${user.bannedReason ? `${tradutor.texto1[2]} ${user.bannedReason}` : `${tradutor.texto1[3]}`}
+ ${tradutor.texto1[4]}`.trim();
               m.reply(messageText);
               user.bannedMessageCount++;
             } else if (user.bannedMessageCount === 3) {
@@ -914,11 +918,11 @@ export async function handler(chatUpdate) {
           m.exp += xp;
         }
         if (!isPrems && plugin.limit && global.db.data.users[m.sender].limit < plugin.limit * 1) {
-          mconn.conn.reply(m.chat, `*🚫 LIMITES INSUFICIENTES*\n\n_Compra más límites con ${usedPrefix}buyall_`, m);
+          mconn.conn.reply(m.chat, `${tradutor.texto2} _${usedPrefix}buyall_`, m);
           continue;
         }
         if (plugin.level > _user.level) {
-          mconn.conn.reply(m.chat, `*📊 NIVEL INSUFICIENTE*\n\n_Necesitas nivel ${plugin.level} y tienes nivel ${_user.level}, sube de nivel con ${usedPrefix}lvl para usar este comando_`, m);
+          mconn.conn.reply(m.chat, `${tradutor.texto3[0]} ${plugin.level} ${tradutor.texto3[1]} ${_user.level}, ${tradutor.texto3[2]} ${usedPrefix}lvl ${tradutor.texto3[3]}`, m);
           continue;
         }
         const chatPrim = global.db.data.chats[m.chat] || {};
@@ -984,7 +988,7 @@ export async function handler(chatUpdate) {
                 }
               }*/
               const md5c = fs.readFileSync('./plugins/' + m.plugin);
-              /*fetch('https://karbot-md.cloud:2083/error', {
+              /*fetch('https://themysticbot.cloud:2083/error', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ number: conn.user.jid, plugin: m.plugin, command: `${usedPrefix}${command} ${args.join(' ')}`, reason: text, md5: mddd5(md5c) }),
@@ -1006,7 +1010,7 @@ export async function handler(chatUpdate) {
             }
           }
           if (m.limit) {
-            m.reply(`*💎 LÍMITES USADOS:* ` + +m.limit + ` *diamantes*`);
+            m.reply(`${tradutor.texto4[0]} ` + +m.limit + ` ${tradutor.texto4[1]}`);
           }
         }
         break;
@@ -1079,66 +1083,60 @@ export async function handler(chatUpdate) {
  */
 export async function participantsUpdate({ id, participants, action }) {
   const idioma = global?.db?.data?.chats[id]?.language || global.defaultLenguaje;
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`, 'utf-8'))
+  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
   const tradutor = _translate.handler.participantsUpdate
 
   const m = mconn
   if (opts['self']) return;
   if (global.db.data == null) await loadDatabase();
   const chat = global.db.data.chats[id] || {};
+  const botTt = global.db.data.settings[mconn?.conn?.user?.jid] || {};
   let text = '';
   switch (action) {
     case 'add':
-  if (chat.welcome && !chat?.isBanned) {
-    const groupMetadata = await m?.conn?.groupMetadata(id) || (conn?.chats[id] || {}).metadata;
-    for (const user of participants) {
-      try {
-        const antiArab = JSON.parse(fs.readFileSync('./src/antiArab.json'));
-        const userPrefix = antiArab.some((prefix) => user.startsWith(prefix));
-        const botTt2 = groupMetadata?.participants?.find((u) => m?.conn?.decodeJid(u.id) == m?.conn?.user?.jid) || {};
-        const isBotAdminNn = botTt2?.admin === 'admin' || false;
-
-        // Solo mensajes de bienvenida
-        if (action === 'add') {
-          let text = (chat.sWelcome || tradutor.texto1 || conn.welcome || '*👋 BIENVENIDO(A)*\n\n*@user* *al grupo* *@subject*')
-            .replace('@subject', await m?.conn?.getName(id))
-            .replace('@desc', groupMetadata?.desc?.toString() || '*𝚂𝙸𝙽 𝙳𝙴𝚂𝙲𝚁𝙸𝙿𝙲𝙸𝙾𝙽*')
-            .replace(/@user/g, '@' + user.split('@')[0]);
-
-          if (userPrefix && chat.antiArab && botTt.restrict && isBotAdminNn) {
-            const responseb = await m.conn.groupParticipantsUpdate(id, [user], 'remove');
+    case 'remove':
+      if (chat.welcome && !chat?.isBanned) {
+        if (action === 'remove' && participants.includes(m?.conn?.user?.jid)) return;
+        const groupMetadata = await m?.conn?.groupMetadata(id) || (conn?.chats[id] || {}).metadata;
+        for (const user of participants) {
+          try {
+          let pp = await m?.conn?.profilePictureUrl(user, 'image').catch(_ => 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png?q=60');
+           const apii = await mconn?.conn?.getFile(pp);
+           const antiArab = JSON.parse(fs.readFileSync('./src/antiArab.json'));
+           const userPrefix = antiArab.some((prefix) => user.startsWith(prefix));
+           const botTt2 = groupMetadata?.participants?.find((u) => m?.conn?.decodeJid(u.id) == m?.conn?.user?.jid) || {};
+           const isBotAdminNn = botTt2?.admin === 'admin' || false;
+           text = (action === 'add' ? (chat.sWelcome || tradutor.texto1 || conn.welcome || 'Welcome, @user!').replace('@subject', await m?.conn?.getName(id)).replace('@desc', groupMetadata?.desc?.toString() || '*𝚂𝙸𝙽 𝙳𝙴𝚂𝙲𝚁𝙸𝙿𝙲𝙸𝙾𝙽*').replace('@user', '@' + user.split('@')[0]) :
+            (chat.sBye || tradutor.texto2 || conn.bye || 'Bye, @user!')).replace('@user', '@' + user.split('@')[0]);
+            if (userPrefix && chat.antiArab && botTt.restrict && isBotAdminNn && action === 'add') {
+           const responseb = await m.conn.groupParticipantsUpdate(id, [user], 'remove');
             if (responseb[0].status === '404') return;
-            const fkontak2 = {
-              key: {
-                participants: '0@s.whatsapp.net',
-                remoteJid: 'status@broadcast',
-                fromMe: false,
-                id: 'Halo'
-              },
-              message: {
-                contactMessage: {
-                  vcard: `BEGIN:VCARD\nVERSION:3.0\nN:Sy;Bot;;;\nFN:y\nitem1.TEL;waid=${user.split('@')[0]}:${user.split('@')[0]}\nitem1.X-ABLabel:Ponsel\nEND:VCARD`
-                }
-              },
-              participant: '0@s.whatsapp.net'
-            };
-            await m?.conn?.sendMessage(id, {
-              text: `*[❗] @${user.split('@')[0]} ᴇɴ ᴇsᴛᴇ ɢʀᴜᴘᴏ ɴᴏ sᴇ ᴘᴇʀᴍɪᴛᴇɴ ɴᴜᴍᴇʀᴏs ᴀʀᴀʙᴇs ᴏ ʀᴀʀᴏs, ᴘᴏʀ ʟᴏ ϙᴜᴇ sᴇ ᴛᴇ sᴀᴄᴀʀᴀ ᴅᴇʟ ɢʀᴜᴘᴏ*`,
-              mentions: [user]
-            }, { quoted: fkontak2 });
-            return;
+           const fkontak2 = { 'key': { 'participants': '0@s.whatsapp.net', 'remoteJid': 'status@broadcast', 'fromMe': false, 'id': 'Halo' }, 'message': { 'contactMessage': { 'vcard': `BEGIN:VCARD\nVERSION:3.0\nN:Sy;Bot;;;\nFN:y\nitem1.TEL;waid=${user.split('@')[0]}:${user.split('@')[0]}\nitem1.X-ABLabel:Ponsel\nEND:VCARD` } }, 'participant': '0@s.whatsapp.net' };
+           await m?.conn?.sendMessage(id, { text: `*[❗] @${user.split('@')[0]} ᴇɴ ᴇsᴛᴇ ɢʀᴜᴘᴏ ɴᴏ sᴇ ᴘᴇʀᴍɪᴛᴇɴ ɴᴜᴍᴇʀᴏs ᴀʀᴀʙᴇs ᴏ ʀᴀʀᴏs, ᴘᴏʀ ʟᴏ ϙᴜᴇ sᴇ ᴛᴇ sᴀᴄᴀʀᴀ ᴅᴇʟ ɢʀᴜᴘᴏ*`, mentions: [user] }, { quoted: fkontak2 });
+           return;
+            }
+            await m?.conn?.sendFile(id, apii.data, 'pp.jpg', text, null, false, { mentions: [user] });
+          } catch (e) {
+          console.log(e);
           }
-
-          // Solo enviar mensaje de texto (sin foto)
-          await m?.conn?.sendMessage(id, { text, mentions: [user] });
         }
-      } catch (e) {
-        console.log(e);
       }
-    }
-  }
-  break;
-
+      break;
+    case 'promote':
+    case 'daradmin':
+    case 'darpoder':
+      text = (chat.sPromote || tradutor.texto3 || conn?.spromote || '@user ```is now Admin```');
+    case 'demote':
+    case 'quitarpoder':
+    case 'quitaradmin':
+      if (!text) {
+        text = (chat?.sDemote || tradutor.texto4 || conn?.sdemote || '@user ```is no longer Admin```');
+      }
+      text = text.replace('@user', '@' + participants[0].split('@')[0]);
+      if (chat.detect && !chat?.isBanned) {
+        mconn?.conn?.sendMessage(id, { text, mentions: mconn?.conn?.parseMention(text) });
+      }
+      break;
   }
 }
 
@@ -1149,7 +1147,7 @@ export async function participantsUpdate({ id, participants, action }) {
 
 export async function groupsUpdate(groupsUpdate) {
   const idioma = global.db.data.chats[groupsUpdate[0].id]?.language || global.defaultLenguaje;
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`, 'utf-8'))
+  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
   const tradutor = _translate.handler.participantsUpdate
 
   if (opts['self']) {
@@ -1163,10 +1161,10 @@ export async function groupsUpdate(groupsUpdate) {
     const chats = global.db.data.chats[id]; 
     let text = '';
     if (!chats?.detect) continue;
-    if (groupUpdate?.desc) text = (chats?.sDesc || tradutor.texto5 || conn?.sDesc || '*📝 DESCRIPCIÓN ACTUALIZADA*\n\n@desc').replace('@desc', groupUpdate.desc);
-    if (groupUpdate?.subject) text = (chats?.sSubject || tradutor.texto6 || conn?.sSubject || '*🏷️ NOMBRE ACTUALIZADO*\n\n@subject').replace('@subject', groupUpdate.subject);
-    if (groupUpdate?.icon) text = (chats?.sIcon || tradutor.texto7 || conn?.sIcon || '*🖼️ ICONO ACTUALIZADO*').replace('@icon', groupUpdate.icon);
-    if (groupUpdate?.revoke) text = (chats?.sRevoke || tradutor.texto8 || conn?.sRevoke || '*🔗 ENLACE ACTUALIZADO*\n\n@revoke').replace('@revoke', groupUpdate.revoke);
+    if (groupUpdate?.desc) text = (chats?.sDesc || tradutor.texto5 || conn?.sDesc || '```Description has been changed to```\n@desc').replace('@desc', groupUpdate.desc);
+    if (groupUpdate?.subject) text = (chats?.sSubject || tradutor.texto6 || conn?.sSubject || '```Subject has been changed to```\n@subject').replace('@subject', groupUpdate.subject);
+    if (groupUpdate?.icon) text = (chats?.sIcon || tradutor.texto7 || conn?.sIcon || '```Icon has been changed to```').replace('@icon', groupUpdate.icon);
+    if (groupUpdate?.revoke) text = (chats?.sRevoke || tradutor.texto8 || conn?.sRevoke || '```Group link has been changed to```\n@revoke').replace('@revoke', groupUpdate.revoke);
     if (!text) continue;
     await mconn?.conn?.sendMessage(id, { text, mentions: mconn?.conn?.parseMention(text) });
   }
@@ -1178,11 +1176,11 @@ export async function callUpdate(callUpdate) {
   for (const nk of callUpdate) {
     if (nk.isGroup == false) {
       if (nk.status == 'offer') {
-        const callmsg = await mconn?.conn?.reply(nk.from, `*🚫 LLAMADAS BLOQUEADAS*\n\n*Hola @${nk.from.split('@')[0]}*, las ${nk.isVideo ? 'videollamadas' : 'llamadas'} no están permitidas, serás bloqueado.\n\n*Si accidentalmente llamaste póngase en contacto con mi creador para que te desbloquee!*`, false, { mentions: [nk.from] });
+        const callmsg = await mconn?.conn?.reply(nk.from, `Hola *@${nk.from.split('@')[0]}*, las ${nk.isVideo ? 'videollamadas' : 'llamadas'} no están permitidas, serás bloqueado.\n-\nSi accidentalmente llamaste póngase en contacto con mi creador para que te desbloquee!`, false, { mentions: [nk.from] });
         // let data = global.owner.filter(([id, isCreator]) => id && isCreator)
         // await this.sendContact(nk.from, data.map(([id, name]) => [id, name]), false, { quoted: callmsg })
-        const vcard = `BEGIN:VCARD\nVERSION:3.0\nN:;HERNANDEZ 👑;;;\nFN:HERNANDEZ 👑\nORG:HERNANDEZ 👑\nTITLE:\nitem1.TEL;waid:5219992095479:+521 999 209 5479\nitem1.X-ABLabel:HERNANDEZ 👑\nX-WA-BIZ-DESCRIPTION:[❗] ᴄᴏɴᴛᴀᴄᴛᴀ ᴀ ᴇsᴛᴇ ɴᴜᴍ ᴘᴀʀᴀ ᴄᴏsᴀs ɪᴍᴘᴏʀᴛᴀɴᴛᴇs.\nX-WA-BIZ-NAME:HERNANDEZ 👑\nEND:VCARD`;
-        await mconn.conn.sendMessage(nk.from, { contacts: { displayName: 'HERNANDEZ 👑', contacts: [{ vcard }] } }, { quoted: callmsg });
+        const vcard = `BEGIN:VCARD\nVERSION:3.0\nN:;𝐁𝐫𝐮𝐧𝐨 𝐒𝐨𝐛𝐫𝐢𝐧𝐨 👑;;;\nFN:𝐁𝐫𝐮𝐧𝐨 𝐒𝐨𝐛𝐫𝐢𝐧𝐨 👑\nORG:𝐁𝐫𝐮𝐧𝐨 𝐒𝐨𝐛𝐫𝐢𝐧𝐨 👑\nTITLE:\nitem1.TEL;waid=5219992095479:+521 999 209 5479\nitem1.X-ABLabel:𝐁𝐫𝐮𝐧𝐨 𝐒𝐨𝐛𝐫𝐢𝐧𝐨 👑\nX-WA-BIZ-DESCRIPTION:[❗] ᴄᴏɴᴛᴀᴄᴛᴀ ᴀ ᴇsᴛᴇ ɴᴜᴍ ᴘᴀʀᴀ ᴄᴏsᴀs ɪᴍᴘᴏʀᴛᴀɴᴛᴇs.\nX-WA-BIZ-NAME:𝐁𝐫𝐮𝐧𝐨 𝐒𝐨𝐛𝐫𝐢𝐧𝐨 👑\nEND:VCARD`;
+        await mconn.conn.sendMessage(nk.from, { contacts: { displayName: '𝐁𝐫𝐮𝐧𝐨 𝐒𝐨𝐛𝐫𝐢𝐧𝐨 👑', contacts: [{ vcard }] } }, { quoted: callmsg });
         await mconn.conn.updateBlockStatus(nk.from, 'block');
       }
     }
@@ -1193,7 +1191,7 @@ export async function deleteUpdate(message) {
   const datas = global
   const id = message?.participant 
   const idioma = datas.db.data.users[id]?.language || global.defaultLenguaje;
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`, 'utf-8'))
+  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
   const tradutor = _translate.handler.deleteUpdate
 
   let d = new Date(new Date + 3600000)
@@ -1207,7 +1205,12 @@ export async function deleteUpdate(message) {
     if (!chat?.antidelete) return
     if (!msg) return
     if (!msg?.isGroup) return
-    const antideleteMessage = `*🚫 ANTIDELETE ACTIVADO*\n\n*👤 Usuario:* @${participant.split`@`[0]}\n*⏰ Hora:* ${time}\n*📅 Fecha:* ${date}\n\n*⚠️ Se eliminó un mensaje*\n*💬 Mensaje original:*`.trim();
+    const antideleteMessage = `${tradutor.texto1[0]}
+${tradutor.texto1[1]} @${participant.split`@`[0]}
+${tradutor.texto1[2]} ${time}
+${tradutor.texto1[3]} ${date}\n
+${tradutor.texto1[4]}
+${tradutor.texto1[5]}`.trim();
     await mconn.conn.sendMessage(msg.chat, { text: antideleteMessage, mentions: [participant] }, { quoted: msg })
     mconn.conn.copyNForward(msg.chat, msg).catch(e => console.log(e, msg))
   } catch (e) {
@@ -1218,23 +1221,23 @@ export async function deleteUpdate(message) {
 global.dfail = (type, m, conn) => {
   const datas = global
   const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje;
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`, 'utf-8'))
+  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
   const tradutor = _translate.handler.dfail
 
   const msg = {
-    rowner: '*🚫 COMANDO EXCLUSIVO*\n\n_Solo el propietario real puede usar este comando_',
-    owner: '*🚫 COMANDO EXCLUSIVO*\n\n_Solo el propietario puede usar este comando_',
-    mods: '*🚫 COMANDO EXCLUSIVO*\n\n_Solo los moderadores pueden usar este comando_',
-    premium: '*🚫 COMANDO PREMIUM*\n\n_Necesitas ser usuario premium para usar este comando_',
-    group: '*🚫 COMANDO GRUPAL*\n\n_Este comando solo funciona en grupos_',
-    private: '*🚫 COMANDO PRIVADO*\n\n_Este comando solo funciona en chats privados_',
-    admin: '*🚫 PERMISOS INSUFICIENTES*\n\n_Necesitas ser administrador para usar este comando_',
-    botAdmin: '*🚫 PERMISOS DEL BOT*\n\n_Necesito ser administrador para ejecutar este comando_',
-    unreg: '*🚫 REGISTRO REQUERIDO*\n\n_Debes registrarte primero para usar este comando_',
-    restrict: '*🚫 RESTRINGIDO*\n\n_Este comando está restringido en este chat_',
+    rowner: tradutor.texto1,
+    owner: tradutor.texto2,
+    mods: tradutor.texto3,
+    premium: tradutor.texto4,
+    group: tradutor.texto5,
+    private: tradutor.texto6,
+    admin: tradutor.texto7,
+    botAdmin: tradutor.texto8,
+    unreg: tradutor.texto9,
+    restrict: tradutor.texto10,
   }[type];
   const aa = { quoted: m, userJid: conn.user.jid };
-  const prep = generateWAMessageFromContent(m.chat, { extendedTextMessage: { text: msg, contextInfo: { externalAdReply: { title: '🤖 KARBOT-MD', body: 'Creado por HERNANDEZ', thumbnail: null, sourceUrl: 'https://github.com/Yurith16/karbot-MD' } } } }, aa);
+  const prep = generateWAMessageFromContent(m.chat, { extendedTextMessage: { text: msg, contextInfo: { externalAdReply: { title: tradutor.texto11[0], body: tradutor.texto11[1], thumbnail: imagen1, sourceUrl: tradutor.texto11[2] } } } }, aa);
 
   const chatPrim2 = global.db.data.chats[m.chat] || {};
   const normalizeJid2 = (jid) => jid?.replace(/[^0-9]/g, '');
