@@ -10,6 +10,7 @@ import { spawn } from 'child_process';
 import { load } from 'cheerio';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import crypto from 'crypto';
 const { generateWAMessageFromContent, prepareWAMessageMedia } = (await import("baileys")).default;
 
 const AUDIO_SIZE_LIMIT = 50 * 1024 * 1024;
@@ -45,18 +46,53 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
         const isAudio = command === 'test' || command === 'play' || command === 'ytmp3';
         const format = isAudio ? 'mp3' : '720p';
 
-        // 🔧 SCRAPER REPARADO - NUEVO DOMINIO Y MÉTODOS
-        const downloadResult = await yt.download(video.url, format);
+        // 🔧 SISTEMA MEJORADO - PRIMERO SAVETUBE, LUEGO SCRAPER ORIGINAL
+        let downloadResult;
+        let downloadSource = 'savetube';
 
-        if (!downloadResult || !downloadResult.dlink) throw new Error('𝙉𝙤 𝙨𝙚 𝙥𝙪𝙙𝙤 𝙤𝙗𝙩𝙚𝙣𝙚𝙧 𝙚𝙡 𝙚𝙣𝙡𝙖𝙘𝙚 𝙙𝙚 𝙙𝙚𝙨𝙘𝙖𝙧𝙜𝙖');
+        try {
+            // Intentar primero con savetube (más confiable)
+            console.log('🔄 Intentando descarga con savetube...');
+            downloadResult = await savetubeDownload(video.url, format);
+        } catch (savetubeError) {
+            console.log('❌ Savetube falló, usando scraper original:', savetubeError.message);
+            downloadSource = 'scraper';
+
+            try {
+                // Fallback al scraper original
+                downloadResult = await yt.download(video.url, format);
+            } catch (scraperError) {
+                console.log('❌ Scraper original también falló:', scraperError.message);
+                throw new Error(`No se pudo descargar el contenido. Servicios no disponibles.`);
+            }
+        }
+
+        if (!downloadResult || !downloadResult.dlink) {
+            throw new Error('𝙉𝙤 𝙨𝙚 𝙥𝙪𝙙𝙤 𝙤𝙗𝙩𝙚𝙣𝙚𝙧 𝙚𝙡 𝙚𝙣𝙡𝙖𝙘𝙚 𝙙𝙚 𝙙𝙚𝙨𝙘𝙖𝙧𝙜𝙖');
+        }
 
         const mediaUrl = downloadResult.dlink;
+        console.log(`✅ Descarga exitosa desde: ${downloadSource}`);
 
         if (isAudio) {
-            const [audioBuffer, thumbnailBuffer] = await Promise.all([
-                fetch(mediaUrl).then(res => res.buffer()),
-                fetch(video.thumbnail).then(res => res.buffer())
-            ]);
+            let audioBuffer;
+            try {
+                console.log('⬇️ Descargando audio...');
+                const response = await fetch(mediaUrl);
+                if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+                audioBuffer = await response.buffer();
+
+                // Verificar si el buffer está vacío o corrupto
+                if (!audioBuffer || audioBuffer.length === 0) {
+                    throw new Error('El archivo de audio está vacío o corrupto');
+                }
+                console.log(`✅ Audio descargado: ${(audioBuffer.length / (1024 * 1024)).toFixed(2)} MB`);
+            } catch (fetchError) {
+                await m.reply(`Error al descargar el audio: ${fetchError.message}`);
+                return;
+            }
+
+            const thumbnailBuffer = await fetch(video.thumbnail).then(res => res.buffer()).catch(() => null);
 
             let lyricsData = await Genius.searchLyrics(video.title).catch(() => null);
             if (!lyricsData && !isYouTubeUrl) {
@@ -69,13 +105,17 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                 title: video.title,
                 artist: video.author.name,
                 album: 'YouTube Audio',
-                APIC: thumbnailBuffer,
                 year: new Date().getFullYear(),
                 comment: {
                     language: 'spa',
                     text: `🎵 𝙙𝙚𝙨𝙘𝙖𝙧𝙜𝙖 𝙥𝙤𝙧 𝙆𝘼𝙍𝘽𝙊𝙏-𝙈𝘿 🎵\n\nVideo De YouTube: ${video.url}`
                 }
             };
+
+            // Solo agregar thumbnail si está disponible
+            if (thumbnailBuffer) {
+                tags.APIC = thumbnailBuffer;
+            }
 
             if (formattedLyrics) {
                 tags.unsynchronisedLyrics = {
@@ -84,23 +124,50 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                 };
             }
 
-            const taggedBuffer = NodeID3.write(tags, audioBuffer);
+            let taggedBuffer;
+            try {
+                taggedBuffer = NodeID3.write(tags, audioBuffer);
+                // Si NodeID3 falla, usar el buffer original
+                if (!taggedBuffer) taggedBuffer = audioBuffer;
+            } catch (tagError) {
+                console.log('Error al agregar metadatos:', tagError.message);
+                taggedBuffer = audioBuffer; // Usar buffer original sin metadatos
+            }
+
             const fileName = `${sanitizeFileName(video.title.substring(0, 64))}.mp3`;
 
             try {
                 const audioSize = taggedBuffer.length;
                 const shouldSendAsDocument = audioSize > AUDIO_SIZE_LIMIT;
 
+                // Verificar y reparar el audio si es necesario
+                let finalAudioBuffer = taggedBuffer;
+                try {
+                    console.log('🔧 Verificando calidad del audio...');
+                    const repairedBuffer = await repairAudioBuffer(taggedBuffer, fileName);
+                    if (repairedBuffer && repairedBuffer.length > 0) {
+                        finalAudioBuffer = repairedBuffer;
+                        console.log('✅ Audio verificado y optimizado');
+                    }
+                } catch (repairError) {
+                    console.log('⚠️ No se pudo reparar el audio, usando original:', repairError.message);
+                    // Continuar con el buffer original
+                }
+
                 if (shouldSendAsDocument) {
-                    const documentMedia = await prepareWAMessageMedia({ document: taggedBuffer }, { upload: conn.waUploadToServer });
-                    const thumbnailMedia = await prepareWAMessageMedia({ image: thumbnailBuffer }, { upload: conn.waUploadToServer });
+                    console.log('📁 Enviando como documento (archivo grande)...');
+                    const documentMedia = await prepareWAMessageMedia({ document: finalAudioBuffer }, { upload: conn.waUploadToServer });
+                    let thumbnailMedia = null;
+                    if (thumbnailBuffer) {
+                        thumbnailMedia = await prepareWAMessageMedia({ image: thumbnailBuffer }, { upload: conn.waUploadToServer });
+                    }
 
                     const msg = generateWAMessageFromContent(m.chat, {
                         documentMessage: {
                             ...documentMedia.documentMessage,
                             fileName: fileName,
                             mimetype: 'audio/mpeg',
-                            jpegThumbnail: thumbnailMedia.imageMessage.jpegThumbnail,
+                            jpegThumbnail: thumbnailMedia?.imageMessage?.jpegThumbnail || null,
                             contextInfo: {
                                 mentionedJid: [],
                                 forwardingScore: 0,
@@ -111,94 +178,55 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
                     await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id });
                 } else {
-                    const sentMsg = await conn.sendMessage(m.chat, { audio: taggedBuffer, fileName: `${sanitizeFileName(video.title)}.mp3`, mimetype: 'audio/mpeg' }, { quoted: m });
-
-                    setTimeout(async () => {
-                        try {
-                            if (sentMsg && sentMsg.message) {
-                                const audioMsg = sentMsg.message.audioMessage;
-                                const duration = audioMsg?.seconds || 0;
-
-                                if (duration === 0 || !duration) {
-                                    try {
-                                        const repairedBuffer = await repairAudioBuffer(taggedBuffer, fileName);
-
-                                        if (repairedBuffer) {
-                                            const repairedSize = repairedBuffer.length;
-                                            const shouldSendRepairedAsDocument = repairedSize > AUDIO_SIZE_LIMIT;
-
-                                            if (!shouldSendRepairedAsDocument) {
-                                                await conn.sendMessage(m.chat, { audio: repairedBuffer, fileName: `${sanitizeFileName(video.title)}.mp3`, mimetype: 'audio/mpeg' }, { quoted: sentMsg });
-                                            } else {
-                                                const documentMedia = await prepareWAMessageMedia({ document: repairedBuffer }, { upload: conn.waUploadToServer });
-                                                const thumbnailMedia = await prepareWAMessageMedia({ image: thumbnailBuffer }, { upload: conn.waUploadToServer });
-
-                                                const repairMsg = generateWAMessageFromContent(m.chat, {
-                                                    documentMessage: {
-                                                        ...documentMedia.documentMessage,
-                                                        fileName: `${sanitizeFileName(video.title.substring(0, 64))}.mp3`,
-                                                        mimetype: 'audio/mpeg',
-                                                        jpegThumbnail: thumbnailMedia.imageMessage.jpegThumbnail,
-                                                        contextInfo: {
-                                                            mentionedJid: [],
-                                                            forwardingScore: 0,
-                                                            isForwarded: false
-                                                        }
-                                                    }
-                                                }, { quoted: sentMsg });
-
-                                                await conn.relayMessage(m.chat, repairMsg.message, { messageId: repairMsg.key.id });
-                                            }
-                                        }
-                                    } catch (repairError) {
-                                        console.log('𝙀𝙧𝙧𝙤𝙧 𝙚𝙣 𝙧𝙚𝙥𝙖𝙧𝙖𝙘𝙞ó𝙣 𝙙𝙚 𝙖𝙪𝙙𝙞𝙤:', repairError.message);
-                                    }
-                                }
-                            }
-                        } catch (verifyError) {
-                            console.log('𝙀𝙧𝙧𝙤𝙧 𝙚𝙣 𝙫𝙚𝙧𝙞𝙛𝙞𝙘𝙖𝙘𝙞ó𝙣 𝙙𝙚 𝙙𝙪𝙧𝙖𝙘𝙞ó𝙣:', verifyError.message);
-                        }
-                    }, 2000);
+                    console.log('🎵 Enviando como audio...');
+                    await conn.sendMessage(m.chat, { 
+                        audio: finalAudioBuffer, 
+                        fileName: `${sanitizeFileName(video.title)}.mp3`, 
+                        mimetype: 'audio/mpeg',
+                        ptt: false 
+                    }, { quoted: m });
                 }
+
+                console.log('✅ Audio enviado exitosamente');
+
             } catch (audioError) {
                 const errorMsg = audioError.message || audioError.toString();
-                if (errorMsg.includes('Media upload failed') || 
-                    errorMsg.includes('ENOSPC') || 
-                    errorMsg.includes('no space left') ||
-                    errorMsg.includes('Internal Server Error') ||
-                    errorMsg.includes('size') || 
-                    errorMsg.includes('memory')) {
+                console.log('Error al enviar audio:', errorMsg);
 
-                    try {
-                        const documentMedia = await prepareWAMessageMedia({ document: taggedBuffer }, { upload: conn.waUploadToServer });
-                        const thumbnailMedia = await prepareWAMessageMedia({ image: thumbnailBuffer }, { upload: conn.waUploadToServer });
-
-                        const msg = generateWAMessageFromContent(m.chat, {
-                            documentMessage: {
-                                ...documentMedia.documentMessage,
-                                fileName: fileName,
-                                mimetype: 'audio/mpeg',
-                                jpegThumbnail: thumbnailMedia.imageMessage.jpegThumbnail,
-                                contextInfo: {
-                                    mentionedJid: [],
-                                    forwardingScore: 0,
-                                    isForwarded: false
-                                }
-                            }
-                        }, { quoted: m });
-
-                        await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id });
-                    } catch (urlError) {
-                        await m.reply(tradutor.errors.generic.replace('@error', '𝙀𝙧𝙧𝙤𝙧 𝙙𝙚 𝙚𝙣𝙫í𝙤. 𝙄𝙣𝙩𝙚𝙣𝙩𝙖 𝙣𝙪𝙚𝙫𝙖𝙢𝙚𝙣𝙩𝙚.'));
+                // Intentar enviar como documento de respaldo
+                try {
+                    console.log('🔄 Intentando enviar como documento de respaldo...');
+                    const documentMedia = await prepareWAMessageMedia({ document: taggedBuffer }, { upload: conn.waUploadToServer });
+                    let thumbnailMedia = null;
+                    if (thumbnailBuffer) {
+                        thumbnailMedia = await prepareWAMessageMedia({ image: thumbnailBuffer }, { upload: conn.waUploadToServer });
                     }
-                } else {
-                    await m.reply(tradutor.errors.generic.replace('@error', audioError.message));
+
+                    const msg = generateWAMessageFromContent(m.chat, {
+                        documentMessage: {
+                            ...documentMedia.documentMessage,
+                            fileName: fileName,
+                            mimetype: 'audio/mpeg',
+                            jpegThumbnail: thumbnailMedia?.imageMessage?.jpegThumbnail || null,
+                            contextInfo: {
+                                mentionedJid: [],
+                                forwardingScore: 0,
+                                isForwarded: false
+                            }
+                        }
+                    }, { quoted: m });
+
+                    await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id });
+                    console.log('✅ Audio enviado como documento');
+                } catch (finalError) {
+                    await m.reply(tradutor.errors.generic.replace('@error', `Error final: ${audioError.message}`));
                 }
             }
 
         } else {
             // Manejo de video
             try {
+                console.log('🎥 Descargando video...');
                 const [videoBuffer, thumbnailBuffer] = await Promise.all([
                     fetch(mediaUrl).then(res => res.buffer()),
                     fetch(video.thumbnail).then(res => res.buffer())
@@ -208,7 +236,10 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                 const shouldSendAsDocument = videoSize > VIDEO_SIZE_LIMIT;
                 const fileName = `${sanitizeFileName(video.title.substring(0, 64))}.mp4`;
 
+                console.log(`✅ Video descargado: ${(videoSize / (1024 * 1024)).toFixed(2)} MB`);
+
                 if (shouldSendAsDocument) {
+                    console.log('📁 Enviando video como documento...');
                     const documentMedia = await prepareWAMessageMedia({ document: videoBuffer }, { upload: conn.waUploadToServer });
                     const thumbnailMedia = await prepareWAMessageMedia({ image: thumbnailBuffer }, { upload: conn.waUploadToServer });
 
@@ -228,11 +259,21 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
 
                     await conn.relayMessage(m.chat, msg.message, { messageId: msg.key.id });
                 } else {
-                    await conn.sendMessage(m.chat, { video: videoBuffer, caption: video.title, mimetype: 'video/mp4', fileName: `${sanitizeFileName(video.title)}.mp4` }, { quoted: m });
+                    console.log('🎬 Enviando video normal...');
+                    await conn.sendMessage(m.chat, { 
+                        video: videoBuffer, 
+                        caption: video.title, 
+                        mimetype: 'video/mp4', 
+                        fileName: `${sanitizeFileName(video.title)}.mp4` 
+                    }, { quoted: m });
                 }
+
+                console.log('✅ Video enviado exitosamente');
 
             } catch (videoError) {
                 const errorMsg = videoError.message || videoError.toString();
+                console.log('Error al procesar video:', errorMsg);
+
                 if (errorMsg.includes('Media upload failed') || 
                     errorMsg.includes('ENOSPC') || 
                     errorMsg.includes('no space left') ||
@@ -241,6 +282,7 @@ let handler = async (m, { conn, args, usedPrefix, command }) => {
                     errorMsg.includes('memory')) {
 
                     try {
+                        console.log('🔄 Intentando envío directo por URL...');
                         const urlDocumentMedia = await prepareWAMessageMedia({ document: { url: mediaUrl } }, { upload: conn.waUploadToServer });
                         const urlThumbnailMedia = await prepareWAMessageMedia({ image: { url: video.thumbnail } }, { upload: conn.waUploadToServer });
 
@@ -279,11 +321,173 @@ handler.tags = ['downloader'];
 handler.command = /^(test|test2|play|play2|ytmp3|ytmp4)$/i;
 export default handler;
 
-// 🔧 SCRAPER COMPLETAMENTE REPARADO - NUEVOS ENDPOINTS
+// 🔧 SISTEMA SAVETUBE - ALTERNATIVA CONFIABLE
+const savetube = {
+    api: {
+        base: "https://media.savetube.me/api",
+        cdn: "/random-cdn",
+        info: "/v2/info",
+        download: "/download"
+    },
+    headers: {
+        'accept': '*/*',
+        'content-type': 'application/json',
+        'origin': 'https://yt.savetube.me',
+        'referer': 'https://yt.savetube.me/',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    },
+    formats: ['144', '240', '360', '480', '720', '1080', 'mp3'],
+    crypto: {
+        hexToBuffer: (hexString) => {
+            const matches = hexString.match(/.{1,2}/g);
+            return Buffer.from(matches.join(''), 'hex');
+        },
+        decrypt: async (enc) => {
+            try {
+                const secretKey = 'C5D58EF67A7584E4A29F6C35BBC4EB12';
+                const data = Buffer.from(enc, 'base64');
+                const iv = data.slice(0, 16);
+                const content = data.slice(16);
+                const key = savetube.crypto.hexToBuffer(secretKey);
+                const decipher = crypto.createDecipheriv('aes-128-cbc', key, iv);
+                let decrypted = decipher.update(content);
+                decrypted = Buffer.concat([decrypted, decipher.final()]);
+                return JSON.parse(decrypted.toString());
+            } catch (error) {
+                throw new Error(error)
+            }
+        }
+    },
+    youtube: url => {
+        if (!url) return null;
+        const a = [
+            /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+            /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+            /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
+            /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+            /youtu\.be\/([a-zA-Z0-9_-]{11})/
+        ];
+        for (let b of a) {
+            if (b.test(url)) return url.match(b)[1];
+        }
+        return null
+    },
+    request: async (endpoint, data = {}, method = 'post') => {
+        try {
+            const { data: response } = await axios({
+                method,
+                url: `${endpoint.startsWith('http') ? '' : savetube.api.base}${endpoint}`,
+                data: method === 'post' ? data : undefined,
+                params: method === 'get' ? data : undefined,
+                headers: savetube.headers,
+                timeout: 30000
+            })
+            return {
+                status: true,
+                code: 200,
+                data: response
+            }
+        } catch (error) {
+            throw new Error(error)
+        }
+    },
+    getCDN: async () => {
+        const response = await savetube.request(savetube.api.cdn, {}, 'get');
+        if (!response.status) throw new Error(response)
+        return {
+            status: true,
+            code: 200,
+            data: response.data.cdn
+        }
+    },
+    download: async (link, format) => {
+        if (!link) {
+            return {
+                status: false,
+                code: 400,
+                error: "No link provided. Please provide a valid YouTube link."
+            }
+        }
+        if (!format || !savetube.formats.includes(format)) {
+            return {
+                status: false,
+                code: 400,
+                error: "Invalid format. Please choose one of the available formats: 144, 240, 360, 480, 720, 1080, mp3.",
+                available_fmt: savetube.formats
+            }
+        }
+        const id = savetube.youtube(link);
+        if (!id) throw new Error('Invalid YouTube link.');
+        try {
+            const cdnx = await savetube.getCDN();
+            if (!cdnx.status) return cdnx;
+            const cdn = cdnx.data;
+            const result = await savetube.request(`https://${cdn}${savetube.api.info}`, {
+                url: `https://www.youtube.com/watch?v=${id}`
+            });
+            if (!result.status) return result;
+            const decrypted = await savetube.crypto.decrypt(result.data.data);
+            var dl;
+            try {
+                dl = await savetube.request(`https://${cdn}${savetube.api.download}`, {
+                    id: id,
+                    downloadType: format === 'mp3' ? 'audio' : 'video',
+                    quality: format === 'mp3' ? '128' : format,
+                    key: decrypted.key
+                });
+            } catch (error) {
+                throw new Error('Failed to get download link. Please try again later.');
+            };
+            return {
+                status: true,
+                code: 200,
+                result: {
+                    title: decrypted.title || "Unknown Title",
+                    type: format === 'mp3' ? 'audio' : 'video',
+                    format: format,
+                    thumbnail: decrypted.thumbnail || `https://i.ytimg.com/vi/${id}/0.jpg`,
+                    download: dl.data.data.downloadUrl,
+                    id: id,
+                    key: decrypted.key,
+                    duration: decrypted.duration,
+                    quality: format === 'mp3' ? '128' : format,
+                    downloaded: dl.data.data.downloaded
+                }
+            }
+        } catch (error) {
+            throw new Error('An error occurred while processing your request. Please try again later.');
+        }
+    }
+};
+
+// Función para usar savetube como alternativa
+async function savetubeDownload(url, format) {
+    try {
+        console.log(`🎯 Usando savetube para formato: ${format}`);
+        const result = await savetube.download(url, format === 'mp3' ? 'mp3' : '720');
+
+        if (result && result.status && result.result && result.result.download) {
+            return {
+                dlink: result.result.download,
+                status: 'CONVERTED',
+                source: 'savetube',
+                quality: result.result.quality
+            };
+        } else {
+            throw new Error('Savetube no devolvió enlace de descarga');
+        }
+    } catch (error) {
+        console.log('❌ Error en savetube:', error.message);
+        throw error;
+    }
+}
+
+// 🔧 SCRAPER ORIGINAL (como fallback)
 const yt = {
     get baseUrl() {
         return {
-            origin: 'https://ssyoutube.com' // Nuevo dominio funcional
+            origin: 'https://ssyoutube.com',
+            alternative: 'https://savefrom.net'
         }
     },
 
@@ -294,13 +498,14 @@ const yt = {
             'referer': this.baseUrl.origin + '/',
             'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'accept': 'application/json, text/plain, */*',
-            'accept-language': 'es-ES,es;q=0.9,en;q=0.8'
+            'accept-language': 'es-ES,es;q=0.9,en;q=0.8',
+            'x-requested-with': 'XMLHttpRequest'
         }
     },
 
     validateFormat: function (userFormat) {
         const validFormat = ['mp3', '360p', '720p', '1080p']
-        if (!validFormat.includes(userFormat)) throw Error(`𝙁𝙤𝙧𝙢𝙖𝙩𝙤 𝙞𝙣𝙫á𝙡𝙞𝙙𝙤. 𝙁𝙤𝙧𝙢𝙖𝙩𝙤𝙨 𝙙𝙞𝙨𝙥𝙤𝙣𝙞𝙗𝙡𝙚𝙨: ${validFormat.join(', ')}`)
+        if (!validFormat.includes(userFormat)) throw Error(`Formato inválido. Formatos disponibles: ${validFormat.join(', ')}`)
     },
 
     handleFormat: function (userFormat, searchJson) {
@@ -308,22 +513,21 @@ const yt = {
         let result
 
         if (userFormat == 'mp3') {
-            // Buscar enlaces MP3 en diferentes ubicaciones
             result = searchJson.links?.mp3?.mp3128?.k || 
                     searchJson.links?.mp3?.['128']?.k ||
+                    searchJson.links?.audio?.mp3128?.k ||
                     searchJson.url ||
                     searchJson.dlink
         } else {
             let selectedFormat
-            const allFormats = Object.entries(searchJson.links?.mp4 || {})
+            const allFormats = Object.entries(searchJson.links?.mp4 || searchJson.links?.video || {})
 
             if (allFormats.length === 0) {
-                // Si no hay formatos MP4, intentar con URL directa
                 result = searchJson.url || searchJson.dlink
             } else {
-                const quality = allFormats.map(v => v[1].q).filter(v => /\d+p/.test(v)).map(v => parseInt(v)).sort((a, b) => b - a).map(v => v + 'p')
+                const quality = allFormats.map(v => v[1].q).filter(v => v && /\d+p/.test(v)).map(v => parseInt(v)).sort((a, b) => b - a).map(v => v + 'p')
                 if (!quality.includes(userFormat)) {
-                    selectedFormat = quality[0]
+                    selectedFormat = quality[0] || '720p'
                 } else {
                     selectedFormat = userFormat
                 }
@@ -332,7 +536,7 @@ const yt = {
             }
         }
 
-        if (!result) throw Error(`𝙁𝙤𝙧𝙢𝙖𝙩𝙤 ${userFormat} 𝙣𝙤 𝙙𝙞𝙨𝙥𝙤𝙣𝙞𝙗𝙡𝙚 𝙥𝙖𝙧𝙖 𝙚𝙨𝙩𝙚 𝙫𝙞𝙙𝙚𝙤`)
+        if (!result) throw Error(`Formato ${userFormat} no disponible para este video`)
         return result
     },
 
@@ -341,7 +545,8 @@ const yt = {
             const url = `${this.baseUrl.origin}${path}`
             const opts = { 
                 headers: this.baseHeaders, 
-                method: payload ? 'post' : 'get'
+                method: payload ? 'POST' : 'GET',
+                timeout: 30000
             }
 
             if (payload) {
@@ -349,7 +554,16 @@ const yt = {
             }
 
             const r = await fetch(url, opts)
-            if (!r.ok) throw Error(`${r.status} ${r.statusText}\n${await r.text()}`)
+            if (!r.ok) {
+                if (this.baseUrl.alternative) {
+                    const altUrl = `${this.baseUrl.alternative}${path}`
+                    const altR = await fetch(altUrl, opts)
+                    if (altR.ok) {
+                        return await altR.json()
+                    }
+                }
+                throw Error(`${r.status} ${r.statusText}`)
+            }
             const j = await r.json()
             return j
         } catch (e) {
@@ -360,7 +574,6 @@ const yt = {
     download: async function (queryOrYtUrl, userFormat = 'mp3') {
         this.validateFormat(userFormat)
 
-        // Primero obtener información del video
         let search
         try {
             search = await this.hit('/api/search', {
@@ -368,24 +581,31 @@ const yt = {
                 "lang": "es"
             })
         } catch (e) {
-            // Si falla el primer endpoint, intentar alternativo
-            search = await this.hit('/api/convert', {
-                "url": queryOrYtUrl
-            })
+            try {
+                search = await this.hit('/api/convert', {
+                    "url": queryOrYtUrl
+                })
+            } catch (e2) {
+                const videoId = extractVideoId(queryOrYtUrl)
+                if (!videoId) throw Error(`No se pudo extraer el ID del video: ${queryOrYtUrl}`)
+
+                search = { 
+                    vid: videoId, 
+                    links: {},
+                    url: `https://www.youtube.com/watch?v=${videoId}`
+                }
+            }
         }
 
         if (!search || !search.vid) {
-            // Si no hay vid, intentar extraer de la URL
             const videoId = extractVideoId(queryOrYtUrl)
-            if (!videoId) throw Error(`𝙉𝙤 𝙨𝙚 𝙥𝙪𝙙𝙤 𝙚𝙭𝙩𝙧𝙖𝙚𝙧 𝙚𝙡 𝙄𝘿 𝙙𝙚𝙡 𝙫𝙞𝙙𝙚𝙤: ${queryOrYtUrl}`)
-
+            if (!videoId) throw Error(`No se pudo extraer el ID del video: ${queryOrYtUrl}`)
             search = { vid: videoId, links: {} }
         }
 
         const vid = search.vid
         const k = this.handleFormat(userFormat, search)
 
-        // Convertir el video
         let convert
         try {
             convert = await this.hit('/api/convert', {
@@ -393,7 +613,6 @@ const yt = {
                 "k": k
             })
         } catch (e) {
-            // Si falla la conversión, usar enlace directo si está disponible
             if (search.url || search.dlink) {
                 return { 
                     dlink: search.url || search.dlink,
@@ -403,29 +622,34 @@ const yt = {
             throw e
         }
 
-        if (convert.c_status == 'CONVERTING' || convert.status == 'processing') {
+        if (convert && (convert.c_status == 'CONVERTING' || convert.status == 'processing')) {
             let convert2
-            const limit = 15
+            const limit = 8
             let attempt = 0
 
             do {
                 attempt++
-                convert2 = await this.hit(`/api/convert/check?vid=${vid}&k=${k}`)
+                try {
+                    convert2 = await this.hit(`/api/convert/check?vid=${vid}&k=${k}`)
 
-                if (convert2.c_status == 'CONVERTED' || convert2.status == 'finished') {
-                    return convert2
+                    if (convert2.c_status == 'CONVERTED' || convert2.status == 'finished') {
+                        return convert2
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 2000))
+                } catch (checkError) {
+                    console.log('Error en check:', checkError.message)
                 }
+            } while (attempt < limit && (convert2?.c_status == 'CONVERTING' || convert2?.status == 'processing'))
 
-                await new Promise(re => setTimeout(re, 3000))
-            } while (attempt < limit && (convert2.c_status == 'CONVERTING' || convert2.status == 'processing'))
-
-            throw Error('𝙀𝙡 𝙖𝙧𝙘𝙝𝙞𝙫𝙤 𝙖ú𝙣 𝙨𝙚 𝙚𝙨𝙩á 𝙥𝙧𝙤𝙘𝙚𝙨𝙖𝙣𝙙𝙤. 𝙄𝙣𝙩𝙚𝙣𝙩𝙖 𝙙𝙚 𝙣𝙪𝙚𝙫𝙤 𝙚𝙣 𝙪𝙣𝙤𝙨 𝙢𝙤𝙢𝙚𝙣𝙩𝙤𝙨.')
+            throw Error('El archivo aún se está procesando. Intenta de nuevo en unos momentos.')
         } else {
-            return convert
+            return convert || { dlink: search.url, status: 'CONVERTED' }
         }
-    },
+    }
 }
 
+// Funciones auxiliares (sin cambios)
 function isValidYouTubeUrl(url) {
     const ytRegex = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/|v\/)|youtu\.be\/|music\.youtube\.com\/watch\?v=)/i;
     return ytRegex.test(url) && extractVideoId(url);
@@ -434,11 +658,11 @@ function isValidYouTubeUrl(url) {
 async function getVideoInfoFromUrl(url) {
     try {
         const videoId = extractVideoId(url);
-        if (!videoId) throw new Error('𝙐𝙍𝙇 𝙙𝙚 𝙔𝙤𝙪𝙏𝙪𝙗𝙚 𝙣𝙤 𝙫á𝙡𝙞𝙙𝙖');
+        if (!videoId) throw new Error('URL de YouTube no válida');
         const videoInfo = await yts({ videoId: videoId });
 
         if (!videoInfo || !videoInfo.title) {
-            throw new Error('𝙉𝙤 𝙨𝙚 𝙥𝙪𝙙𝙤 𝙤𝙗𝙩𝙚𝙣𝙚𝙧 𝙞𝙣𝙛𝙤𝙧𝙢𝙖𝙘𝙞ó𝙣 𝙙𝙚𝙡 𝙫𝙞𝙙𝙚𝙤');
+            throw new Error('No se pudo obtener información del video');
         }
         return {
             videoId: videoId,
@@ -464,13 +688,13 @@ async function getVideoInfoFromUrl(url) {
 async function getVideoInfoFromYouTubeAPI(url) {
     try {
         const videoId = extractVideoId(url);
-        if (!videoId) throw new Error('𝙄𝘿 𝙙𝙚 𝙫𝙞𝙙𝙚𝙤 𝙣𝙤 𝙫á𝙡𝙞𝙙𝙤');
+        if (!videoId) throw new Error('ID de video no válido');
         return {
             videoId: videoId,
             url: url,
-            title: '𝙑𝙞𝙙𝙚𝙤 𝙙𝙚 𝙔𝙤𝙪𝙏𝙪𝙗𝙚', 
+            title: 'Video de YouTube', 
             author: {
-                name: '𝘾𝙖𝙣𝙖𝙡 𝙙𝙚 𝙔𝙤𝙪𝙏𝙪𝙗𝙚' 
+                name: 'Canal de YouTube' 
             },
             duration: {
                 seconds: 0,
@@ -478,11 +702,10 @@ async function getVideoInfoFromYouTubeAPI(url) {
             },
             thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
             views: 0,
-            ago: '𝘿𝙚𝙨𝙘𝙤𝙣𝙤𝙘𝙞𝙙𝙤'
+            ago: 'Desconocido'
         };
-
     } catch (error) {
-        throw new Error(`𝙀𝙧𝙧𝙤𝙧 𝙖𝙡 𝙥𝙧𝙤𝙘𝙚𝙨𝙖𝙧 𝙐𝙍𝙇 𝙙𝙚 𝙔𝙤𝙪𝙏𝙪𝙗𝙚: ${error.message}`);
+        throw new Error(`Error al procesar URL de YouTube: ${error.message}`);
     }
 }
 
@@ -518,7 +741,7 @@ const Genius = {
             const searchRes = await axios.get(searchUrl);
 
             if (!searchRes.data.response?.sections?.[0]?.hits?.length) {
-                throw new Error('𝙉𝙤 𝙨𝙚 𝙚𝙣𝙘𝙤𝙣𝙩𝙧𝙖𝙧𝙤𝙣 𝙡𝙚𝙩𝙧𝙖𝙨 𝙚𝙣 𝙂𝙚𝙣𝙞𝙪𝙨.');
+                throw new Error('No se encontraron letras en Genius.');
             }
 
             const songPath = searchRes.data.response.sections[0].hits[0].result.path;
@@ -527,7 +750,7 @@ const Genius = {
             const $ = load(data); 
 
             let lyrics = $('div[class*="Lyrics__Container"]').html();
-            if (!lyrics) throw new Error('𝙇𝙚𝙩𝙧𝙖 𝙣𝙤 𝙙𝙞𝙨𝙥𝙤𝙣𝙞𝙗𝙡𝙚 𝙚𝙣 𝙛𝙤𝙧𝙢𝙖𝙩𝙤 𝙚𝙨𝙩𝙧𝙪𝙘𝙩𝙪𝙧𝙖𝙙𝙤.');
+            if (!lyrics) throw new Error('Letra no disponible en formato estructurado.');
 
             lyrics = lyrics.replace(/<br>/g, '\n').replace(/<[^>]+>/g, '').trim();
 
@@ -558,13 +781,16 @@ async function repairAudioBuffer(audioBuffer, fileName) {
         return new Promise((resolve, reject) => {
             const ffmpeg = spawn('ffmpeg', [
                 '-i', inputPath,
+                '-f', 'mp3',
                 '-c:a', 'libmp3lame',
-                '-b:a', '128k',
+                '-b:a', '192k',
                 '-ac', '2',
                 '-ar', '44100',
                 '-y',
                 outputPath
-            ]);
+            ], {
+                stdio: ['ignore', 'ignore', 'pipe']
+            });
 
             let stderr = '';
 
@@ -580,7 +806,16 @@ async function repairAudioBuffer(audioBuffer, fileName) {
                         fs.unlinkSync(outputPath);
                         resolve(repairedBuffer);
                     } else {
-                        reject(new Error(`𝙁𝙁𝙢𝙥𝙚𝙜 𝙛𝙖𝙡𝙡ó 𝙘𝙤𝙣 𝙘ó𝙙𝙞𝙜𝙤 ${code}: ${stderr}`));
+                        // Si FFmpeg falla, devolver el buffer original
+                        console.log(`FFmpeg falló con código ${code}, usando audio original`);
+                        if (fs.existsSync(inputPath)) {
+                            const originalBuffer = fs.readFileSync(inputPath);
+                            fs.unlinkSync(inputPath);
+                            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+                            resolve(originalBuffer);
+                        } else {
+                            reject(new Error(`No se pudo procesar el audio: ${stderr}`));
+                        }
                     }
                 } catch (error) {
                     reject(error);
@@ -588,23 +823,48 @@ async function repairAudioBuffer(audioBuffer, fileName) {
             });
 
             ffmpeg.on('error', (error) => {
-                reject(error);
+                console.log('Error en FFmpeg:', error.message);
+                // En caso de error, devolver el buffer original
+                try {
+                    if (fs.existsSync(inputPath)) {
+                        const originalBuffer = fs.readFileSync(inputPath);
+                        fs.unlinkSync(inputPath);
+                        if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+                        resolve(originalBuffer);
+                    } else {
+                        reject(error);
+                    }
+                } catch (cleanupError) {
+                    reject(error);
+                }
             });
 
             setTimeout(() => {
                 if (ffmpeg.exitCode === null) {
                     ffmpeg.kill();
-                    reject(new Error('𝙏𝙞𝙚𝙢𝙥𝙤 𝙙𝙚 𝙚𝙨𝙥𝙚𝙧𝙖 𝙖𝙜𝙤𝙩𝙖𝙙𝙤'));
+                    try {
+                        if (fs.existsSync(inputPath)) {
+                            const originalBuffer = fs.readFileSync(inputPath);
+                            fs.unlinkSync(inputPath);
+                            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
+                            resolve(originalBuffer);
+                        } else {
+                            reject(new Error('Tiempo de espera agotado'));
+                        }
+                    } catch (timeoutError) {
+                        reject(new Error('Tiempo de espera agotado'));
+                    }
                 }
-            }, 30000);
+            }, 15000);
         });
 
     } catch (error) {
-        console.log('𝙀𝙧𝙧𝙤𝙧 𝙚𝙣 𝙧𝙚𝙥𝙖𝙧𝙖𝙘𝙞ó𝙣 𝙙𝙚 𝙖𝙪𝙙𝙞𝙤:', error.message);
+        console.log('Error en reparación de audio:', error.message);
         try {
             if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
             if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
         } catch (cleanupError) {}
-        throw error;
+        // En caso de error, devolver el buffer original
+        return audioBuffer;
     }
 }

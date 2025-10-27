@@ -199,7 +199,7 @@ ${allCommands.split('\n').map(cmd => `┃ ➡️ ${cmd}`).join('\n')}
             `🔥 *KARBOT-MD* - Tu asistente personal 🔥`
         ].join('\n\n');
 
-        const imageUrl = 'https://qu.ax/JCgKF.png';
+        const imageUrl = 'https://qu.ax/DMtmw.jpg';
 
         await conn.sendMessage(m.chat, {
             image: { url: imageUrl },
