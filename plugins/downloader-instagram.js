@@ -4,65 +4,120 @@ import axios from "axios";
 
 const handler = async (m, { conn, args, command, usedPrefix }) => {
   // Sistema de reacción - Indicar que el comando fue detectado
-  await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } });
-  
+  await conn.sendMessage(m.chat, { react: { text: "⏳", key: m.key } });
+
   const datas = global;
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje;
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`));
+  const idioma =
+    datas.db.data.users[m.sender].language || global.defaultLenguaje;
+  const _translate = JSON.parse(
+    fs.readFileSync(`./src/languages/${idioma}.json`)
+  );
   const tradutor = _translate.plugins.descargas_instagram;
 
-  if (!args[0]) throw `${tradutor.texto1} _${usedPrefix + command} https://www.instagram.com/reel/C8sWV3Nx_GZ/?igsh=MWZoeTY2cW01Nzg1bQ==`;
-  
+  if (!args[0]) {
+    await conn.sendMessage(
+      m.chat,
+      {
+        text: `> 🜸 *agrega un enlace* » ingresa un enlace de instagram\n> 🜸 *ejemplo* » ${usedPrefix + command} https://www.instagram.com/reel/C8sWV3Nx_GZ/`,
+      },
+      { quoted: m }
+    );
+    return;
+  }
+
   try {
     // Cambiar reacción a "descargando"
-    await conn.sendMessage(m.chat, { react: { text: '📥', key: m.key } });
-    
+    await conn.sendMessage(m.chat, { react: { text: "📥", key: m.key } });
+
     const img = await instagramDownload(args[0]);
-    
+
     if (img.status && img.data.length > 0) {
       for (let i = 0; i < img.data.length; i++) {
         const item = img.data[i];
         if (item.type === "image") {
-          await conn.sendMessage(m.chat, { image: { url: item.url } }, { quoted: m });
+          await conn.sendMessage(
+            m.chat,
+            {
+              image: { url: item.url },
+              caption: `> 🜸 *descarga exitosa* » 🫡`,
+            },
+            { quoted: m }
+          );
         } else if (item.type === "video") {
-          await conn.sendMessage(m.chat, { video: { url: item.url } }, { quoted: m });
+          await conn.sendMessage(
+            m.chat,
+            {
+              video: { url: item.url },
+              caption: `> 🜸 *descarga exitosa* » 🫡`,
+            },
+            { quoted: m }
+          );
         }
       }
       // Reacción de éxito
-      await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
+      await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } });
     } else {
       // Intentar con API alternativa
-      await conn.sendMessage(m.chat, { react: { text: '🔄', key: m.key } });
-      
-      const res = await axios.get(global.BASE_API_DELIRIUS + "/download/instagram", { params: { url: args[0] }});
+      await conn.sendMessage(m.chat, { react: { text: "🔄", key: m.key } });
+
+      const res = await axios.get(
+        global.BASE_API_DELIRIUS + "/download/instagram",
+        { params: { url: args[0] } }
+      );
       const result = res.data.data;
-      
+
       if (result && result.length > 0) {
         for (let i = 0; i < result.length; i++) {
           const item = result[i];
           if (item.type === "image") {
-            await conn.sendMessage(m.chat, { image: { url: item.url } }, { quoted: m });
+            await conn.sendMessage(
+              m.chat,
+              {
+                image: { url: item.url },
+                caption: `> 🜸 *descarga exitosa* » 🫡`,
+              },
+              { quoted: m }
+            );
           } else if (item.type === "video") {
-            await conn.sendMessage(m.chat, { video: { url: item.url } }, { quoted: m });
+            await conn.sendMessage(
+              m.chat,
+              {
+                video: { url: item.url },
+                caption: `> 🜸 *descarga exitosa* » 🫡`,
+              },
+              { quoted: m }
+            );
           }
         }
         // Reacción de éxito
-        await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
+        await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } });
       } else {
         // Reacción de error - no se encontró contenido
-        await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-        throw new Error('No se pudo descargar el contenido de Instagram');
+        await conn.sendMessage(m.chat, { react: { text: "❌", key: m.key } });
+        await conn.sendMessage(
+          m.chat,
+          {
+            text: `> 🜸 *error en la descarga* » intente con un enlace diferente`,
+          },
+          { quoted: m }
+        );
       }
     }
   } catch (err) {
     // Reacción de error
-    await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-    console.error('Error en descarga de Instagram:', err);
-    m.reply(`❌ *Error al descargar el contenido:* ${err.message}`);
+    await conn.sendMessage(m.chat, { react: { text: "❌", key: m.key } });
+    await conn.sendMessage(
+      m.chat,
+      {
+        text: `> 🜸 *error en la descarga* » intente con un enlace diferente`,
+      },
+      { quoted: m }
+    );
   }
 };
 
-handler.command = /^(instagramdl|instagram|igdl|ig|instagramdl2|instagram2|igdl2|ig2|instagramdl3|instagram3|igdl3|ig3)$/i;
+handler.command =
+  /^(instagramdl|instagram|igdl|ig|instagramdl2|instagram2|igdl2|ig2|instagramdl3|instagram3|igdl3|ig3)$/i;
 export default handler;
 
 const instagramDownload = async (url) => {
@@ -96,7 +151,7 @@ const instagramDownload = async (url) => {
               "User-Agent":
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
             },
-          },
+          }
         )
       ).data.job_id;
       let status = "working";
@@ -121,7 +176,7 @@ const instagramDownload = async (url) => {
               "User-Agent":
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
             },
-          },
+          }
         );
         status = jobStatusResponse.data.status;
       }

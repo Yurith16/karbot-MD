@@ -8,34 +8,29 @@ const handler = async (m, { conn, text, args, usedPrefix, command }) => {
     // Sistema de reacción - Indicar que el comando fue detectado
     await conn.sendMessage(m.chat, { react: { text: "⏳", key: m.key } });
 
-    const datas = global;
-    const idioma =
-        datas.db.data.users[m.sender].language || global.defaultLenguaje;
-    const _translate = JSON.parse(
-        fs.readFileSync(`./src/languages/${idioma}.json`),
-    );
-    const tradutor = _translate.plugins.descargas_tiktok;
+    if (!text) {
+        await conn.sendMessage(m.chat, { 
+            text: `> 🜸 *agrega un enlace* » ingresa un enlace de tiktok\n> 🜸 *ejemplo* » ${usedPrefix + command} https://vt.tiktok.com/ZSSm2fhLX/` 
+        }, { quoted: m });
+        return;
+    }
 
-    if (!text)
-        throw `${tradutor.texto1} _${usedPrefix + command} https://vt.tiktok.com/ZSSm2fhLX/_`;
-    if (
-        !/(?:https:?\/{2})?(?:w{3}|vm|vt|t)?\.?tiktok.com\/([^\s&]+)/gi.test(
-            text,
-        )
-    )
-        throw `${tradutor.texto2} _${usedPrefix + command} https://vt.tiktok.com/ZSSm2fhLX/_`;
-
-    const texto = `${tradutor.texto3}`;
+    if (!/(?:https:?\/{2})?(?:w{3}|vm|vt|t)?\.?tiktok.com\/([^\s&]+)/gi.test(text)) {
+        await conn.sendMessage(m.chat, { 
+            text: `> 🜸 *enlace inválido* » ingresa un enlace válido de tiktok\n> 🜸 *ejemplo* » ${usedPrefix + command} https://vt.tiktok.com/ZSSm2fhLX/` 
+        }, { quoted: m });
+        return;
+    }
 
     try {
         // Cambiar reacción a "procesando"
         await conn.sendMessage(m.chat, { react: { text: "📥", key: m.key } });
 
         const links = await fetchDownloadLinks(args[0], "tiktok", conn, m);
-        if (!links) throw new Error("No se pudieron obtener enlaces");
+        if (!links) throw new Error("> 🜸 *error* » no se pudieron obtener enlaces");
         const download = getDownloadLink("tiktok", links);
-        if (!download) throw new Error("No se pudo obtener enlace de descarga");
-        const cap = `${tradutor.texto8[0]} _${usedPrefix}tomp3_ ${tradutor.texto8[1]}`;
+        if (!download) throw new Error("> 🜸 *error* » no se pudo obtener enlace de descarga");
+        const cap = `> 🜸 *descarga exitosa* »`;
 
         // Cambiar reacción a "enviando"
         await conn.sendMessage(m.chat, { react: { text: "📤", key: m.key } });
@@ -48,12 +43,15 @@ const handler = async (m, { conn, text, args, usedPrefix, command }) => {
 
         // Reacción de éxito
         await conn.sendMessage(m.chat, { react: { text: "✅", key: m.key } });
-    } catch {
+    } catch (error) {
         // Reacción de error
         await conn.sendMessage(m.chat, { react: { text: "❌", key: m.key } });
-        throw `${tradutor.texto9}`;
+        await conn.sendMessage(m.chat, { 
+            text: `> 🜸 *error* » no se pudo descargar el video\n> 🜸 *solución* » verifica que el enlace sea válido` 
+        }, { quoted: m });
     }
 };
+
 handler.command = /^(tiktok|tk|tiktokdl|tiktoknowm|tt|ttnowm|tiktokaudio)$/i;
 export default handler;
 

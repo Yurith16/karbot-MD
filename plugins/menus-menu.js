@@ -1,144 +1,145 @@
-import { promises as fs } from 'fs';
-import { join } from 'path';
+import { promises as fs } from "fs";
+import { join } from "path";
 
 const handler = async (m, { conn, usedPrefix, __dirname, isPrems }) => {
+  try {
+    const username = "@" + m.sender.split("@s.whatsapp.net")[0];
+    if (usedPrefix == "a" || usedPrefix == "A") return;
+
+    // Reacción del menú
     try {
-        const username = '@' + m.sender.split('@s.whatsapp.net')[0];
-        if (usedPrefix == 'a' || usedPrefix == 'A') return;
+      await conn.sendMessage(m.chat, {
+        react: {
+          text: "📱",
+          key: m.key,
+        },
+      });
+    } catch (reactError) {}
 
-        // Reacción del menú
-        try {
-            await conn.sendMessage(m.chat, {
-                react: {
-                    text: '📱',
-                    key: m.key
-                }
-            });
-        } catch (reactError) {}
+    const more = String.fromCharCode(8206);
+    const readMore = more.repeat(4001);
 
-        const more = String.fromCharCode(8206);
-        const readMore = more.repeat(4001);
+    const d = new Date(new Date().getTime() + 3600000);
 
-        const d = new Date(new Date().getTime() + 3600000);
+    let week, date;
+    try {
+      week = d.toLocaleDateString("es-ES", { weekday: "long" });
+      date = d.toLocaleDateString("es-ES", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch (error) {
+      week = "Desconocido";
+      date = "Desconocido";
+    }
 
-        let week, date;
-        try {
-            week = d.toLocaleDateString('es-ES', { weekday: 'long' });
-            date = d.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        } catch (error) {
-            week = 'Desconocido';
-            date = 'Desconocido';
-        }
+    const _uptime = process.uptime() * 1000;
+    const uptime = clockString(_uptime);
+    const rtotalreg = Object.values(global.db.data.users).filter(
+      (user) => user.registered == true
+    ).length;
+    const rtotal = Object.keys(global.db.data.users).length || "0";
 
-        const _uptime = process.uptime() * 1000;
-        const uptime = clockString(_uptime);
-        const rtotalreg = Object.values(global.db.data.users).filter(user => user.registered == true).length;
-        const rtotal = Object.keys(global.db.data.users).length || '0';
+    const user = global.db.data.users[m.sender];
+    const exp = user.exp ? user.exp : 0;
+    const limit = user.limit ? user.limit : 0;
+    const level = user.level ? user.level : 0;
+    const role = user.role ? user.role : "Nuevo";
+    const money = user.money ? user.money : 0;
+    const joincount = user.joincount ? user.joincount : 0;
+    const isPremium = user.premiumTime > 0 || isPrems;
 
-        const user = global.db.data.users[m.sender];
-        const exp = user.exp ? user.exp : 0;
-        const limit = user.limit ? user.limit : 0;
-        const level = user.level ? user.level : 0;
-        const role = user.role ? user.role : 'Nuevo';
-        const money = user.money ? user.money : 0;
-        const joincount = user.joincount ? user.joincount : 0;
-        const isPremium = user.premiumTime > 0 || isPrems;
+    // Comandos organizados - SOLO LOS TÍTULOS QUE QUIERES
+    const extrasCommands = {
+      descarga: [
+        `${usedPrefix}play -- musica`,
+        `${usedPrefix}play2 -- video`,
+        `${usedPrefix}ytmp3 <url> -- audio`,
+        `${usedPrefix}ytmp3doc <url> -- audio`,
+        `${usedPrefix}ytmp4 <url> -- video`,
+        `${usedPrefix}ytmp4doc <url> -- video`,
+        `${usedPrefix}facebook <url>`,
+        `${usedPrefix}instagram <url>`,
+        `${usedPrefix}tiktok <url>`,
+        `${usedPrefix}mediafire <url>`,
+        `${usedPrefix}twitter <url>`,
+      ],
+      herramientas: [`${usedPrefix}clima <lugar>`, `${usedPrefix}del <msj>`],
+      "efectos de audio": [
+        `${usedPrefix}bass`,
+        `${usedPrefix}blown`,
+        `${usedPrefix}deep`,
+        `${usedPrefix}earrape`,
+        `${usedPrefix}fast`,
+        `${usedPrefix}fat`,
+        `${usedPrefix}nightcore`,
+        `${usedPrefix}reverse`,
+        `${usedPrefix}robot`,
+        `${usedPrefix}slow`,
+        `${usedPrefix}smooth`,
+        `${usedPrefix}tupai`,
+      ],
+    };
 
-        // Comandos organizados - SOLO LOS TÍTULOS QUE QUIERES
-        const extrasCommands = {
-            'descarga': [
-                `${usedPrefix}ytmp3 <url>`,
-                `${usedPrefix}ytmp4 <url>`,
-                `${usedPrefix}facebook <url>`,
-                `${usedPrefix}instagram <url>`,
-                `${usedPrefix}tiktok <url>`,
-                `${usedPrefix}twitter <url>`
-            ],
-            'herramientas': [
-                `${usedPrefix}chatgpt <txt>`,
-                `${usedPrefix}clima <lugar>`,
-                `${usedPrefix}readqr <img>`,
-                `${usedPrefix}del <msj>`
-            ],
-            'efectos de audio': [
-                `${usedPrefix}bass`,
-                `${usedPrefix}blown`,
-                `${usedPrefix}deep`,
-                `${usedPrefix}earrape`,
-                `${usedPrefix}fast`,
-                `${usedPrefix}fat`,
-                `${usedPrefix}nightcore`,
-                `${usedPrefix}reverse`,
-                `${usedPrefix}robot`,
-                `${usedPrefix}slow`,
-                `${usedPrefix}smooth`,
-                `${usedPrefix}tupai`
-            ],
-            'herramientas grupo': [
-                `${usedPrefix}enable welcome`,
-                `${usedPrefix}disable welcome`,
-                `${usedPrefix}enable antilink`,
-                `${usedPrefix}disable antilink`,
-                `${usedPrefix}enable detect`,
-                `${usedPrefix}disable detect`
-            ],
-            'owner': [
-                `${usedPrefix}autoadmin`,
-                `${usedPrefix}addowner <@user>`,
-                `${usedPrefix}borrarowner <@user>`,
-                `${usedPrefix}block <@user>`,
-                `${usedPrefix}unblock <@user>`,
-                `${usedPrefix}banuser <@user>`,
-                `${usedPrefix}dardiamantes <@user> <cant>`,
-                `${usedPrefix}añadirxp <@user> <cant>`,
-                `${usedPrefix}bcbot <txt>`
-            ]
+    const borderedTags = {
+      descarga: "📥 DESCARGAS",
+      herramientas: "🛠️ HERRAMIENTAS",
+      "efectos de audio": "🎧 EFECTOS DE AUDIO",
+      "herramientas grupo": "👥 HERRAMIENTAS GRUPO",
+      owner: "👑 OWNER",
+    };
+
+    const help = Object.values(global.plugins)
+      .filter((plugin) => !plugin.disabled)
+      .map((plugin) => {
+        return {
+          help: Array.isArray(plugin.help) ? plugin.help : [plugin.help],
+          tags: Array.isArray(plugin.tags) ? plugin.tags : [plugin.tags],
+          prefix: "customPrefix" in plugin,
+          limit: plugin.limit,
+          enabled: !plugin.disabled,
         };
+      });
 
-        const borderedTags = {
-            'descarga': '📥 DESCARGAS',
-            'herramientas': '🛠️ HERRAMIENTAS',
-            'efectos de audio': '🎧 EFECTOS DE AUDIO',
-            'herramientas grupo': '👥 HERRAMIENTAS GRUPO',
-            'owner': '👑 OWNER'
-        };
+    const menuSections = Object.keys(borderedTags)
+      .map((tag) => {
+        const commandsInTag = help
+          .filter((menu) => menu.tags && menu.tags.includes(tag) && menu.help)
+          .map((menu) => {
+            return menu.help.map((h) => `${usedPrefix}` + h).join("\n");
+          })
+          .join("\n");
 
-        const help = Object.values(global.plugins).filter(plugin => !plugin.disabled).map(plugin => {
-            return {
-                help: Array.isArray(plugin.help) ? plugin.help : [plugin.help],
-                tags: Array.isArray(plugin.tags) ? plugin.tags : [plugin.tags],
-                prefix: 'customPrefix' in plugin,
-                limit: plugin.limit,
-                enabled: !plugin.disabled,
-            }
-        });
+        const extraCommandsInTag = extrasCommands[tag]
+          ? extrasCommands[tag].join("\n")
+          : "";
 
-        const menuSections = Object.keys(borderedTags).map(tag => {
-            const commandsInTag = help.filter(menu => menu.tags && menu.tags.includes(tag) && menu.help).map(menu => {
-                return menu.help.map(h => `${usedPrefix}` + h).join('\n');
-            }).join('\n');
+        const allCommands = [commandsInTag, extraCommandsInTag]
+          .filter(Boolean)
+          .join("\n");
 
-            const extraCommandsInTag = extrasCommands[tag] ? extrasCommands[tag].join('\n') : '';
-
-            const allCommands = [commandsInTag, extraCommandsInTag].filter(Boolean).join('\n');
-
-            if (allCommands) {
-                return `
+        if (allCommands) {
+          return `
 ╭━━〔 ${borderedTags[tag]} 〕━━╮
 ┃
-${allCommands.split('\n').map(cmd => `┃ ➡️ ${cmd}`).join('\n')}
+${allCommands
+  .split("\n")
+  .map((cmd) => `┃ ➡️ ${cmd}`)
+  .join("\n")}
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━╯
 `.trim();
-            }
-            return '';
-        }).filter(section => section !== '');
+        }
+        return "";
+      })
+      .filter((section) => section !== "");
 
-        const infoBotSection = `
+    const infoBotSection = `
 ╭━━〔 ℹ️ INFO DEL BOT ℹ️ 〕━━╮
 ┃
-┃ ➡️ Creador: ${global.author || 'KARBOT-MD'}
-┃ ➡️ Contacto: wa.me/${global.owner?.[0]?.[0] || '0'}
+┃ ➡️ Creador: ${global.author || "KARBOT-MD"}
+┃ ➡️ Contacto: wa.me/${global.owner?.[0]?.[0] || "0"}
 ┃ ➡️ Actividad: ${uptime}
 ┃ ➡️ Usuarios: ${rtotal}
 ┃ ➡️ Registrados: ${rtotalreg}
@@ -146,7 +147,7 @@ ${allCommands.split('\n').map(cmd => `┃ ➡️ ${cmd}`).join('\n')}
 ╰━━━━━━━━━━━━━━━━━━━━╯
 `.trim();
 
-        const infoUserSection = `
+    const infoUserSection = `
 ╭━━〔 👤 INFO DEL USUARIO 👤 〕━━╮
 ┃
 ┃ ➡️ Usuario: ${username}
@@ -155,12 +156,12 @@ ${allCommands.split('\n').map(cmd => `┃ ➡️ ${cmd}`).join('\n')}
 ┃ ➡️ XP: ${exp}
 ┃ ➡️ Diamantes: ${limit}
 ┃ ➡️ Dinero: ${money}
-┃ ➡️ Premium: ${isPremium ? '✅' : '❌'}
+┃ ➡️ Premium: ${isPremium ? "✅" : "❌"}
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━╯
 `.trim();
 
-        const mainHeader = `
+    const mainHeader = `
 ╭━━〔 🔥 KARBOT-MD 🔥 〕━━╮
 ┃
 ┃ ➡️ Hola, ${username}
@@ -169,36 +170,39 @@ ${allCommands.split('\n').map(cmd => `┃ ➡️ ${cmd}`).join('\n')}
 ╰━━━━━━━━━━━━━━━━━━━━╯
 `.trim();
 
-        const fullText = [
-            mainHeader,
-            infoBotSection,
-            infoUserSection,
-            ...menuSections,
-            `🔥 *KARBOT-MD* - Tu asistente personal 🔥`
-        ].join('\n\n');
+    const fullText = [
+      mainHeader,
+      infoBotSection,
+      infoUserSection,
+      ...menuSections,
+      `🔥 *KARBOT-MD* - Tu asistente personal 🔥`,
+    ].join("\n\n");
 
-        const imageUrl = 'https://qu.ax/DMtmw.jpg';
+    const imageUrl = "https://qu.ax/DMtmw.jpg";
 
-        await conn.sendMessage(m.chat, {
-            image: { url: imageUrl },
-            caption: fullText,
-            mentions: [m.sender]
-        }, { quoted: m });
-
-    } catch (e) {
-        console.error('Error en menú:', e);
-        await m.reply('❌ *ERROR AL CARGAR EL MENÚ*\n\nIntenta nuevamente.');
-    }
+    await conn.sendMessage(
+      m.chat,
+      {
+        image: { url: imageUrl },
+        caption: fullText,
+        mentions: [m.sender],
+      },
+      { quoted: m }
+    );
+  } catch (e) {
+    console.error("Error en menú:", e);
+    await m.reply("❌ *ERROR AL CARGAR EL MENÚ*\n\nIntenta nuevamente.");
+  }
 };
 
-handler.help = ['menu'];
-handler.tags = ['info'];
+handler.help = ["menu"];
+handler.tags = ["info"];
 handler.command = /^(menu|help|comandos|commands|cmd|cmds)$/i;
 export default handler;
 
 function clockString(ms) {
-    const h = isNaN(ms) ? '--' : Math.floor(ms / 3600000);
-    const m = isNaN(ms) ? '--' : Math.floor(ms / 60000) % 60;
-    const s = isNaN(ms) ? '--' : Math.floor(ms / 1000) % 60;
-    return [h, m, s].map(v => v.toString().padStart(2, 0)).join(':');
+  const h = isNaN(ms) ? "--" : Math.floor(ms / 3600000);
+  const m = isNaN(ms) ? "--" : Math.floor(ms / 60000) % 60;
+  const s = isNaN(ms) ? "--" : Math.floor(ms / 1000) % 60;
+  return [h, m, s].map((v) => v.toString().padStart(2, 0)).join(":");
 }

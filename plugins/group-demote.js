@@ -1,68 +1,77 @@
-const handler = async (m, {conn, usedPrefix, text}) => {
-  let number;
+const handler = async (m, { conn, usedPrefix }) => {
+  let user;
 
-  if (isNaN(text) && !text.match(/@/g)) {
-    // No hacer nada, se manejará en el error
-  } else if (isNaN(text)) {
-    number = text.split`@`[1];
-  } else if (!isNaN(text)) {
-    number = text;
-  }
-
-  if (!text && !m.quoted) {
-    return conn.reply(m.chat, 
-      `❌ *DEBES ETIQUETAR A UN USUARIO*\n\n` +
-      `💡 *Ejemplos de uso:*\n` +
-      `• ${usedPrefix}quitaradmin @usuario\n` +
-      `• ${usedPrefix}quitaradmin respuesta-a-mensaje\n` +
-      `• ${usedPrefix}quitaradmin 50412345678`, 
-    m);
-  }
-
-  if (number && (number.length > 13 || (number.length < 11 && number.length > 0))) {
-    return conn.reply(m.chat, `❌ *NÚMERO INVÁLIDO*`, m);
+  // Obtener el usuario de diferentes formas
+  if (m.quoted) {
+    user = m.quoted.sender;
+  } else if (m.mentionedJid && m.mentionedJid.length > 0) {
+    user = m.mentionedJid[0];
+  } else {
+    return await conn.sendMessage(
+      m.chat,
+      {
+        text: `*「❌」 Usuario No Especificado*\n\n> ✦ *Debes etiquetar o responder a un usuario*\n> ✦ *Ejemplo:* » ${usedPrefix}quitaradmin @usuario`,
+      },
+      { quoted: m }
+    );
   }
 
   try {
-    let user;
+    // Reacción de proceso
+    await conn.sendMessage(m.chat, {
+      react: { text: "👤", key: m.key },
+    });
 
-    if (text) {
-      user = number + '@s.whatsapp.net';
-    } else if (m?.quoted?.sender) {
-      user = m.quoted.sender;
-    } else if (m.mentionedJid && m.mentionedJid[0]) {
-      user = m.mentionedJid[0];
+    // Quitar admin
+    await conn.groupParticipantsUpdate(m.chat, [user], "demote");
+
+    // Reacción de éxito
+    await conn.sendMessage(m.chat, {
+      react: { text: "✅", key: m.key },
+    });
+
+    await conn.sendMessage(
+      m.chat,
+      {
+        text: `*「👤」 Admin Removido*\n\n> ✦ *Usuario:* » @${
+          user.split("@")[0]
+        }\n> ✦ *Por:* » @${m.sender.split("@")[0]}`,
+        mentions: [user, m.sender],
+      },
+      { quoted: m }
+    );
+  } catch (error) {
+    console.error("Error al quitar admin:", error);
+
+    await conn.sendMessage(m.chat, {
+      react: { text: "❌", key: m.key },
+    });
+
+    let errorMsg = `*「❌」 Error al Remover Admin*`;
+
+    if (error.message.includes("not an admin")) {
+      errorMsg += `\n\n> ✦ *El usuario no es administrador*`;
+    } else if (error.message.includes("not in group")) {
+      errorMsg += `\n\n> ✦ *El usuario no está en el grupo*`;
     } else {
-      throw new Error('No se pudo identificar al usuario');
+      errorMsg += `\n\n> ✦ *Error:* » ${error.message}`;
     }
 
-    await conn.groupParticipantsUpdate(m.chat, [user], 'demote');
-
-    conn.reply(m.chat, 
-      `✅ *ADMINISTRADOR REMOVIDO*\n\n` +
-      `👤 *Usuario:* @${user.split('@')[0]}\n` +
-      `⚡ *Acción realizada por:* @${m.sender.split('@')[0]}\n` +
-      `✨ *Por KARBOT-MD*`, 
-    m, { mentions: [user, m.sender] });
-
-  } catch (error) {
-    console.error(error);
-    conn.reply(m.chat, 
-      `❌ *ERROR AL REMOVER ADMINISTRADOR*\n\n` +
-      `💡 *Posibles causas:*\n` +
-      `• El usuario no es administrador\n` +
-      `• No tengo permisos suficientes\n` +
-      `• El usuario no está en el grupo\n` +
-      `• Error de conexión`, 
-    m);
+    await conn.sendMessage(
+      m.chat,
+      {
+        text: errorMsg,
+      },
+      { quoted: m }
+    );
   }
 };
 
-handler.help = ['demote @usuario'];
-handler.tags = ['group'];
+handler.help = ["demote @usuario"];
+handler.tags = ["group"];
 handler.command = /^(demote|quitarpoder|quitaradmin|removeradmin|quitaradm)$/i;
 handler.group = true;
 handler.admin = true;
 handler.botAdmin = true;
-handler.fail = null;
+
 export default handler;

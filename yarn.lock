@@ -2598,7 +2598,7 @@ app-path@^4.0.0:
 "aptoide-scraper@github:DIEGO-OFC/dv-aptoide-scraper":
   version "1.0.1"
   resolved "git+ssh://git@github.com/DIEGO-OFC/dv-aptoide-scraper.git"
-  integrity sha512-t8RmEZuR5mY3zok+GaTBTR6+Empv1/AAJB8t/99R3RiKRZUuer3G0Nfkz3RPZyxoCo44FBPHRpH6/o4GBCp8xg==
+  integrity sha512-uYOc+dDgLfheFZ6OgE8hzmyoMga90rKld1ZpzhqZjmBcGJWmQ6UHNzS4zoOwtr1dDsDBBUW/x8MTFwxWvWQ9gA==
   dependencies:
     axios "^1.2.2"
     cheerio "^1.0.0-rc.10"

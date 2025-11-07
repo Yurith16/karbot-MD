@@ -1,5 +1,5 @@
-const handler = async (m, {conn, usedPrefix, command}) => {
-  if (!m.quoted) throw `❌ *DEBES RESPONDER A UN MENSAJE PARA ELIMINARLO*`;
+const handler = async (m, { conn, usedPrefix, command }) => {
+  if (!m.quoted) throw `> 🜸 *RESPONDE A UN MENSAJE* » Para eliminarlo`;
 
   try {
     const delet = m.message.extendedTextMessage.contextInfo.participant;
@@ -7,27 +7,27 @@ const handler = async (m, {conn, usedPrefix, command}) => {
 
     await conn.sendMessage(m.chat, {
       delete: {
-        remoteJid: m.chat, 
-        fromMe: false, 
-        id: bang, 
-        participant: delet
-      }
+        remoteJid: m.chat,
+        fromMe: false,
+        id: bang,
+        participant: delet,
+      },
     });
 
-    m.reply(`✅ *MENSAJE ELIMINADO CORRECTAMENTE*`);
-
+    // Mensaje de éxito con el emoji correcto
+    m.reply(`> 🜸 *ELIMINADO* » 🫡`);
   } catch (error) {
     try {
-      await conn.sendMessage(m.chat, {delete: m.quoted.vM.key});
-      m.reply(`✅ *MENSAJE ELIMINADO CORRECTAMENTE*`);
+      await conn.sendMessage(m.chat, { delete: m.quoted.vM.key });
+      m.reply(`> 🜸 *ELIMINADO* » 🫡`);
     } catch {
-      throw `❌ *NO SE PUDO ELIMINAR EL MENSAJE*\n\n*Asegúrate de que soy administrador y tengo permisos para eliminar mensajes*`;
+      throw `> 🜸 *ERROR* » No se pudo eliminar el mensaje\n> 🜸 *SOLUCIÓN* » Verifica que soy admin y tengo permisos`;
     }
   }
 };
 
-handler.help = ['del', 'delete', 'eliminar'];
-handler.tags = ['group'];
+handler.help = ["del", "delete", "eliminar"];
+handler.tags = ["group"];
 handler.command = /^del(ete)?|eliminar$/i;
 handler.group = true;
 handler.admin = true;

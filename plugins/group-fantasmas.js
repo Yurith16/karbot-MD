@@ -24,18 +24,23 @@ const handler = async (m, { conn, participants }) => {
       }, { quoted: m });
     }
 
+    // Reacción de fantasmita al iniciar
+    await conn.sendMessage(m.chat, {
+      react: { text: '👻', key: m.key }
+    });
+
     const members = participants.map(u => u.id);
     let total = 0;
     const sider = [];
 
     for (let i = 0; i < members.length; i++) {
       const user = participants.find(u => u.id == members[i]);
-
+      
       // Verificar si el usuario no ha interactuado con el bot y no es admin
       if ((typeof global.db.data.users[members[i]] == 'undefined' || 
            global.db.data.users[members[i]].chat == 0) && 
           !user?.admin && !user?.isSuperAdmin) {
-
+        
         if (typeof global.db.data.users[members[i]] !== 'undefined') {
           if (global.db.data.users[members[i]].whitelist == false) {
             total++;
@@ -51,25 +56,37 @@ const handler = async (m, { conn, participants }) => {
     const groupName = await conn.getName(m.chat);
 
     if (total == 0) {
+      // Reacción de check cuando no hay fantasmas
+      await conn.sendMessage(m.chat, {
+        react: { text: '✅', key: m.key }
+      });
+      
       return await conn.sendMessage(m.chat, {
         image: { url: 'https://files.catbox.moe/sjhtvx.png' },
         caption: `*「✅」 Grupo Activo*\n\n> ✦ *Grupo:* » ${groupName}\n> ✦ *Miembros:* » ${members.length}\n> ✦ *Estado:* » Todos han interactuado con el bot`
       }, { quoted: m });
     }
 
+    // Reacción de advertencia cuando hay fantasmas
+    await conn.sendMessage(m.chat, {
+      react: { text: '⚠️', key: m.key }
+    });
+
+    // Enviar imagen con etiquetas
     await conn.sendMessage(m.chat, {
       image: { url: 'https://files.catbox.moe/sjhtvx.png' },
-      caption: `*「👻」 Detección de Fantasmas*\n\n` +
-            `> ✦ *Grupo:* » ${groupName}\n` +
-            `> ✦ *Miembros totales:* » ${members.length}\n` +
-            `> ✦ *Usuarios inactivos:* » ${total}\n\n` +
-            `${sider.map((v, i) => `> ${i + 1}. @${v.replace(/@.+/, '')}`).join('\n')}\n\n` +
-            `> 💡 *Estos usuarios no han interactuado con el bot*`,
+      caption: `${sider.map((v, i) => `@${v.replace(/@.+/, '')}`).join(' ')}\n\n*「👻」 Usuarios inactivos detectados: ${total}*`,
       mentions: sider
     }, { quoted: m });
 
   } catch (error) {
     console.error('Error en comando fantasmas:', error);
+    
+    // Reacción de error
+    await conn.sendMessage(m.chat, {
+      react: { text: '❌', key: m.key }
+    });
+    
     await conn.sendMessage(m.chat, {
       text: `*「❌」 Error*\n\n> ✦ *Error:* » ${error.message}`
     }, { quoted: m });
@@ -79,10 +96,5 @@ const handler = async (m, { conn, participants }) => {
 handler.help = ['fantasmas'];
 handler.tags = ['group'];
 handler.command = /^(verfantasmas|fantasmas|sider|inactivos|fantasma)$/i;
-
-// Removidos los handlers que activan dfail
-// handler.group = true;
-// handler.admin = true;
-// handler.botAdmin = true;
 
 export default handler;
