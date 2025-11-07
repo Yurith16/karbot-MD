@@ -1,79 +1,62 @@
-import { createHash } from 'crypto';
-
-const Reg = /\|?(.*)([.|] *?)([0-9]*)$/i;
-
 const handler = async function(m, { conn, text, usedPrefix, command }) {
   const user = global.db.data.users[m.sender];
 
-  if (!user) throw '*❌ USUARIO NO ENCONTRADO EN LA BASE DE DATOS*';
+  if (user.registered === true) {
+    return await conn.sendMessage(m.chat, {
+      text: `*「❌」 Ya Estás Registrado*\n\n> ✦ *Ya tienes una cuenta registrada*`
+    }, { quoted: m });
+  }
 
-  if (user.registered === true) throw `*¡YA ESTÁS REGISTRADO/A!*\n\nSi deseas eliminar tu registro, usa el comando:\n*${usedPrefix}unreg*`;
+  if (!text) {
+    return await conn.sendMessage(m.chat, {
+      text: `*「📝」 Formato de Registro*\n\n> ✦ *Uso:* » ${usedPrefix + command} nombre.edad\n> ✦ *Ejemplo:* » ${usedPrefix + command} Carlos.18`
+    }, { quoted: m });
+  }
 
-  if (!text) throw `*FORMATO INCORRECTO*\n\nUso correcto: *${usedPrefix + command} nombre.edad*\nEjemplo: *${usedPrefix + command} Shadow.18*`;
+  // Validar formato nombre.edad
+  const parts = text.split('.');
+  if (parts.length !== 2) {
+    return await conn.sendMessage(m.chat, {
+      text: `*「❌」 Formato Incorrecto*\n\n> ✦ *Usa:* » nombre.edad\n> ✦ *Ejemplo:* » ${usedPrefix + command} Carlos.18`
+    }, { quoted: m });
+  }
 
-  if (!Reg.test(text)) throw `*FORMATO INCORRECTO*\n\nUso correcto: *${usedPrefix + command} nombre.edad*\nEjemplo: *${usedPrefix + command} Shadow.18*`;
+  const name = parts[0].trim();
+  const age = parseInt(parts[1]);
 
-  let [_, name, splitter, age] = text.match(Reg);
+  if (!name || name.length > 30) {
+    return await conn.sendMessage(m.chat, {
+      text: `*「❌」 Nombre Inválido*\n\n> ✦ *El nombre debe tener menos de 30 caracteres*`
+    }, { quoted: m });
+  }
 
-  name = name ? name.trim() : '';
-  age = age ? age.trim() : '';
+  if (isNaN(age) || age < 5 || age > 100) {
+    return await conn.sendMessage(m.chat, {
+      text: `*「❌」 Edad Inválida*\n\n> ✦ *La edad debe ser entre 5 y 100 años*`
+    }, { quoted: m });
+  }
 
-  if (!name) throw '*❌ DEBES INGRESAR UN NOMBRE*';
-  if (!age) throw '*❌ DEBES INGRESAR TU EDAD*';
-  if (name.length >= 30) throw '*❌ EL NOMBRE ES DEMASIADO LARGO*';
-
-  age = parseInt(age);
-  if (isNaN(age)) throw '*❌ LA EDAD DEBE SER UN NÚMERO*';
-  if (age > 100) throw '*❌ EDAD NO VÁLIDA*';
-  if (age < 5) throw '*❌ EDAD NO VÁLIDA*';
-
-  // Actualizar datos del usuario
+  // Registrar usuario
   user.name = name;
   user.age = age;
   user.regTime = +new Date();
   user.registered = true;
-
-  const sn = createHash('md5').update(m.sender).digest('hex');
-
-  const caption = `
-╭───「 *✅ REGISTRO EXITOSO* 」
-│ ¡Bienvenido/a a KARBOT-MD!
-│
-│ 📝 *Nombre:* ${name}
-│ 🎂 *Edad:* ${age} años
-│ 
-│ 🔐 *Número de serie:*
-│ ┃ ${sn}
-│ 
-│ 💰 *Recompensa por registro:*
-│ ➺ $10,000
-│ ➺ 10,000 XP
-│ 
-│ ¡Disfruta de todas las
-│ funciones del bot!
-╰───────────────
-*🤖 KARBOT-MD | © 2024*`;
-
-  // Sistema de reacción
-  try {
-    await conn.sendMessage(m.chat, {
-      react: {
-        text: '✅',
-        key: m.key
-      }
-    });
-  } catch (reactError) {
-    // Ignorar error de reacción
-  }
-
-  // Enviar solo mensaje de texto sin archivos
-  await conn.sendMessage(m.chat, { 
-    text: caption
-  }, { quoted: m });
-
-  // Recompensas
   user.money = (user.money || 0) + 10000;
   user.exp = (user.exp || 0) + 10000;
+
+  // Reacción de éxito
+  await conn.sendMessage(m.chat, {
+    react: { text: '✅', key: m.key }
+  });
+
+  // Mensaje de confirmación
+  await conn.sendMessage(m.chat, {
+    text: `*「✅」 Registro Exitoso*\n\n` +
+          `> ✦ *Nombre:* » ${name}\n` +
+          `> ✦ *Edad:* » ${age} años\n` +
+          `> ✦ *Recompensa:* » $10,000 + 10,000 XP\n\n` +
+          `*¡Bienvenido a Karbot!*`
+  }, { quoted: m });
 };
 
 handler.help = ['verificar'];

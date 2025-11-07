@@ -1,36 +1,34 @@
-import { createHash } from 'crypto';
-
-const handler = async function(m, { args }) {
-  if (!args[0]) throw '*❌ DEBES INGRESAR TU NÚMERO DE SERIE*\n\nUsa el comando */profile* para ver tu número de serie y luego:\n*/unreg <tu_numero_de_serie>*';
-
+const handler = async function(m, { conn, usedPrefix, command }) {
   const user = global.db.data.users[m.sender];
-  const sn = createHash('md5').update(m.sender).digest('hex');
 
-  if (args[0] !== sn) throw '*❌ NÚMERO DE SERIE INCORRECTO*\n\nVerifica tu número de serie con */profile* e inténtalo de nuevo.';
-
-  user.registered = false;
-  user.name = '';
-  user.age = 0;
-  user.regTime = 0;
-
-  // Sistema de reacción
-  try {
-    await this.sendMessage(m.chat, {
-      react: {
-        text: '🗑️',
-        key: m.key
-      }
-    });
-  } catch (reactError) {
-    // Ignorar error de reacción
+  if (!user.registered) {
+    return await conn.sendMessage(m.chat, {
+      text: `*「❌」 No Estás Registrado*\n\n> ✦ *No tienes una cuenta para eliminar*`
+    }, { quoted: m });
   }
 
-  m.reply(`*✅ REGISTRO ELIMINADO*\n\nTu registro ha sido eliminado exitosamente.\nSi deseas volver a registrarte, usa el comando:\n*/reg nombre.edad*\n\n*🤖 KARBOT-MD | © 2024*`);
+  // Eliminar registro
+  user.registered = false;
+  user.name = '';
+  user.age = '';
+  user.regTime = 0;
+
+  // Reacción de éxito
+  await conn.sendMessage(m.chat, {
+    react: { text: '🗑️', key: m.key }
+  });
+
+  // Mensaje de confirmación
+  await conn.sendMessage(m.chat, {
+    text: `*「🗑️」 Registro Eliminado*\n\n` +
+          `> ✦ *Tu cuenta ha sido eliminada*\n` +
+          `> ✦ *Para registrarte de nuevo usa:*\n` +
+          `> ✦ *Comando:* » ${usedPrefix}reg nombre.edad`
+  }, { quoted: m });
 };
 
-handler.help = ['unreg <numero de serie>'];
+handler.help = ['unreg'];
 handler.tags = ['xp'];
 handler.command = /^unreg(ister)?$/i;
-handler.register = true;
 
 export default handler;

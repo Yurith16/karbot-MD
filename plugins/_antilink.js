@@ -7,62 +7,32 @@ export async function before(m, {conn, isAdmin, isBotAdmin}) {
 
   const chat = global.db.data.chats[m.chat];
   if (!chat?.antiLink) return;
-
   if (!m.text) return;
 
   const hasLinks1 = generalLinkRegex.test(m.text);
   const hasLinks2 = enhancedLinkRegex.test(m.text);
-
   if (!hasLinks1 && !hasLinks2) return;
 
   const user = `@${m.sender.split`@`[0]}`;
 
-  // Si es admin, solo advertir silenciosamente
+  // Si es admin, solo advertir
   if (isAdmin) {
     await conn.sendMessage(m.chat, {
-      react: {
-        text: '⚠️',
-        key: m.key
-      }
+      react: { text: '⚠️', key: m.key }
     });
     return;
   }
 
   // Enlaces permitidos
   const allowedDomains = [
-    'youtube.com',
-    'youtu.be',
-    'tiktok.com',
-    'vm.tiktok.com',
-    'instagram.com',
-    'facebook.com',
-    'fb.com',
-    'twitter.com',
-    'x.com'
-  ];
-
-  // Dominios de Telegram que deben bloquearse PRIORITARIAMENTE
-  const telegramDomains = [
-    't.me',
-    'telegram.me',
-    'telegram.org'
+    'youtube.com', 'youtu.be', 'tiktok.com', 'vm.tiktok.com',
+    'instagram.com', 'facebook.com', 'fb.com', 'twitter.com', 'x.com'
   ];
 
   // Extraer todos los enlaces del mensaje
   const links1 = m.text.match(generalLinkRegex) || [];
   const links2 = m.text.match(enhancedLinkRegex) || [];
   const allLinks = [...new Set([...links1, ...links2])];
-
-  // Verificar si hay enlaces de Telegram (prioridad máxima)
-  const hasTelegramLinks = allLinks.some(link => {
-    try {
-      const fullLink = link.startsWith('http') ? link : `https://${link}`;
-      const domain = new URL(fullLink).hostname.replace('www.', '');
-      return telegramDomains.some(tg => domain.includes(tg));
-    } catch {
-      return false;
-    }
-  });
 
   // Verificar si todos los enlaces son permitidos
   const allLinksAllowed = allLinks.every(link => {
@@ -76,38 +46,25 @@ export async function before(m, {conn, isAdmin, isBotAdmin}) {
   });
 
   // Si todos los enlaces son permitidos, no hacer nada
-  if (allLinksAllowed && !hasTelegramLinks) return;
+  if (allLinksAllowed) return;
 
-  // Si NO es admin y tiene enlaces no permitidos, aplicar acciones
-  console.log(`Enlace no permitido detectado de usuario: ${user}`);
-
-  // Verificar si el bot es admin
+  // Si NO es admin y tiene enlaces no permitidos
   if (!isBotAdmin) {
     await conn.sendMessage(m.chat, {
-      react: {
-        text: '❌',
-        key: m.key
-      }
+      react: { text: '❌', key: m.key }
     });
     return;
   }
 
   try {
-    // Ejecutar acciones rápidas
-    const actions = [];
-
-    // 1. Reacción silenciosa
-    actions.push(
+    // Acciones rápidas
+    await Promise.all([
+      // Reacción
       conn.sendMessage(m.chat, {
-        react: {
-          text: '🚫',
-          key: m.key
-        }
-      }).catch(() => {})
-    );
+        react: { text: '🚫', key: m.key }
+      }).catch(() => {}),
 
-    // 2. Eliminar el mensaje con el enlace (INMEDIATO)
-    actions.push(
+      // Eliminar mensaje
       conn.sendMessage(m.chat, {
         delete: {
           remoteJid: m.chat,
@@ -115,34 +72,22 @@ export async function before(m, {conn, isAdmin, isBotAdmin}) {
           id: m.key.id,
           participant: m.key.participant
         }
-      })
-    );
+      }),
 
-    // 3. Mensaje breve al usuario
-    actions.push(
+      // Mensaje breve
       conn.sendMessage(m.chat, {
-        text: `*${user}* No se permiten enlaces 👀`,
+        text: `🚫 *Karbot - AntiLink*\n\n${user} Enlaces no permitidos`,
         mentions: [m.sender]
-      }, { quoted: m })
-    );
+      }, { quoted: m }),
 
-    // 4. Expulsar al usuario (INMEDIATO)
-    actions.push(
+      // Expulsar usuario
       conn.groupParticipantsUpdate(m.chat, [m.sender], 'remove')
-    );
-
-    // Ejecutar todas las acciones simultáneamente
-    await Promise.all(actions);
-
-    console.log(`Usuario ${user} expulsado por enlace no permitido`);
+    ]);
 
   } catch (error) {
-    console.error('Error en anti-link:', error);
+    // Error silenciado
     await conn.sendMessage(m.chat, {
-      react: {
-        text: '💥',
-        key: m.key
-      }
+      react: { text: '💢', key: m.key }
     });
   }
 }

@@ -44,42 +44,9 @@ const handler = async (m, { conn, usedPrefix, __dirname, isPrems }) => {
         const joincount = user.joincount ? user.joincount : 0;
         const isPremium = user.premiumTime > 0 || isPrems;
 
-        // Comandos organizados
+        // Comandos organizados - SOLO LOS TÍTULOS QUE QUIERES
         const extrasCommands = {
-            'info': [
-                `${usedPrefix}lang`,
-                `${usedPrefix}infobot`,
-                `${usedPrefix}estado`,
-                `${usedPrefix}ds`,
-                `bot (sin prefijo)`
-            ],
-            'jadibot': [
-                `${usedPrefix}serbot --code`
-            ],
-            'xp': [
-                `${usedPrefix}cofre`,
-                `${usedPrefix}balance`,
-                `${usedPrefix}claim`,
-                `${usedPrefix}lb`,
-                `${usedPrefix}myns`,
-                `${usedPrefix}perfil`,
-                `${usedPrefix}crime`
-            ],
-            'game': [
-                `${usedPrefix}mates <nivel>`,
-                `${usedPrefix}ppt <opción>`,
-                `${usedPrefix}ttt`,
-                `${usedPrefix}delttt`
-            ],
-            'group': [
-                `${usedPrefix}enable welcome`,
-                `${usedPrefix}disable welcome`,
-                `${usedPrefix}enable antilink`,
-                `${usedPrefix}disable antilink`,
-                `${usedPrefix}enable detect`,
-                `${usedPrefix}disable detect`
-            ],
-            'downloader': [
+            'descarga': [
                 `${usedPrefix}ytmp3 <url>`,
                 `${usedPrefix}ytmp4 <url>`,
                 `${usedPrefix}facebook <url>`,
@@ -87,17 +54,33 @@ const handler = async (m, { conn, usedPrefix, __dirname, isPrems }) => {
                 `${usedPrefix}tiktok <url>`,
                 `${usedPrefix}twitter <url>`
             ],
-            'search': [
-                `${usedPrefix}peli <text>`
-            ],
-            'tools': [
+            'herramientas': [
                 `${usedPrefix}chatgpt <txt>`,
                 `${usedPrefix}clima <lugar>`,
                 `${usedPrefix}readqr <img>`,
                 `${usedPrefix}del <msj>`
             ],
-            'converter': [
-                `${usedPrefix}toptt <video/audio>`
+            'efectos de audio': [
+                `${usedPrefix}bass`,
+                `${usedPrefix}blown`,
+                `${usedPrefix}deep`,
+                `${usedPrefix}earrape`,
+                `${usedPrefix}fast`,
+                `${usedPrefix}fat`,
+                `${usedPrefix}nightcore`,
+                `${usedPrefix}reverse`,
+                `${usedPrefix}robot`,
+                `${usedPrefix}slow`,
+                `${usedPrefix}smooth`,
+                `${usedPrefix}tupai`
+            ],
+            'herramientas grupo': [
+                `${usedPrefix}enable welcome`,
+                `${usedPrefix}disable welcome`,
+                `${usedPrefix}enable antilink`,
+                `${usedPrefix}disable antilink`,
+                `${usedPrefix}enable detect`,
+                `${usedPrefix}disable detect`
             ],
             'owner': [
                 `${usedPrefix}autoadmin`,
@@ -113,15 +96,10 @@ const handler = async (m, { conn, usedPrefix, __dirname, isPrems }) => {
         };
 
         const borderedTags = {
-            'info': '📱 MENÚ PRINCIPAL 📱',
-            'jadibot': '🤖 JADIBOT',
-            'xp': '✨ NIVELES Y ECONOMÍA',
-            'game': '🎮 JUEGOS',
-            'group': '👥 GRUPO',
-            'downloader': '📥 DESCARGAS',
-            'search': '🔍 BÚSQUEDA',
-            'tools': '🛠️ HERRAMIENTAS',
-            'converter': '🔄 CONVERTIDORES',
+            'descarga': '📥 DESCARGAS',
+            'herramientas': '🛠️ HERRAMIENTAS',
+            'efectos de audio': '🎧 EFECTOS DE AUDIO',
+            'herramientas grupo': '👥 HERRAMIENTAS GRUPO',
             'owner': '👑 OWNER'
         };
 

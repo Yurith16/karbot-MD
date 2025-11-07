@@ -1,25 +1,6 @@
-/* Creador: HERNANDEZ */
-
-const handler = async (m, { conn, usedPrefix }) => {
-  // INFORMACIÓN DEL PROPIETARIO REDUCIDA
-  const text = `╭─「 👑 *PROPIETARIO DE KARBOT-MD* 👑 」
-│
-│ 👤 *Nombre:* Hernandez
-│ 📞 *Contacto:* +50496926150
-│
-╰─「 *KARBOT-MD* 」`.trim();
-
-  // ENVÍO DE MENSAJE INFORMATIVO
-  conn.sendMessage(m.chat, {
-    text: text,
-    contextInfo: {
-      externalAdReply: {
-        mediaType: 2,
-        title: "👑 KARBOT-MD - Propietario",
-        body: "Hernandez - Desarrollador Principal",
-        sourceUrl: " "
-      }
-    }
+const handler = async (m, { conn }) => {
+  await conn.sendMessage(m.chat, {
+    text: `*「👑」 Propietario de Karbot*\n\n> ✦ *Nombre:* » Hernandez\n> ✦ *Contacto:* » +504 9692-6150\n> ✦`
   }, { quoted: m });
 };
 

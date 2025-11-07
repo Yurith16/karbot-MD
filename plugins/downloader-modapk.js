@@ -1,72 +1,160 @@
-/* Desarrollado y Creado por: HERNANDEZ - KARBOT-MD */
+import axios from 'axios';
+const { search, download } = await import('aptoide-scraper');
 
-import {search, download} from 'aptoide-scraper';
+const userRequests = {};
 
-const handler = async (m, {conn, usedPrefix: prefix, command, text}) => {
-  // Sistema de reacción - Indicar que el comando fue detectado
-  await conn.sendMessage(m.chat, { react: { text: '⏳', key: m.key } });
-  
-  const datas = global
-  const idioma = datas.db.data.users[m.sender].language || global.defaultLenguaje
-  const _translate = JSON.parse(fs.readFileSync(`./src/languages/${idioma}.json`))
-  const tradutor = _translate.plugins.downloader_modapk
+const handler = async (m, { conn, text, usedPrefix, command }) => {
+  const jid = m.chat;
+  const sender = m.sender;
 
-  if (!text) throw `📱 *INGRESE EL NOMBRE DE LA APLICACIÓN*`;
-
-  try {    
-    // Cambiar reacción a "buscando"
-    await conn.sendMessage(m.chat, { react: { text: '🔍', key: m.key } });
-    
-    const searchA = await search(text);
-    if (!searchA || searchA.length === 0) {
-      await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-      throw `❌ *NO SE ENCONTRÓ LA APLICACIÓN: ${text}*`;
+  try {
+    if (!text) {
+      return await conn.sendMessage(jid, {
+        text: `*「📱」 Descargar APK*\n\n> ✦ *Ingresa el nombre de la aplicación:*\n> ✦ *Ejemplo:* » ${usedPrefix + command} WhatsApp`
+      }, { quoted: m });
     }
 
-    // Cambiar reacción a "descargando"
-    await conn.sendMessage(m.chat, { react: { text: '📥', key: m.key } });
-    
-    const data5 = await download(searchA[0].id);
-    
-    let response = `📦 *INFORMACIÓN DE LA APK*\n
-🔹 *Nombre:* ${data5.name}
-🔹 *Paquete:* ${data5.package}
-🔹 *Actualización:* ${data5.lastup}
-🔹 *Tamaño:* ${data5.size}
-🔹 *Versión:* ${data5.version}`;
-
-    await conn.sendMessage(m.chat, {image: {url: data5.icon}, caption: response}, {quoted: m});
-    
-    if (data5.size.includes('GB') || data5.size.replace(' MB', '') > 999) {
-      await conn.sendMessage(m.chat, { react: { text: '⚠️', key: m.key } });
-      return await conn.sendMessage(m.chat, {text: `📦 *ARCHIVO DEMASIADO GRANDE*\nEl APK pesa ${data5.size} y no puede ser enviado por WhatsApp.`}, {quoted: m});
+    // Verificar si ya hay una solicitud en proceso
+    if (userRequests[sender]) {
+      return await conn.sendMessage(jid, {
+        text: `*「⏳」 Descarga en Proceso*\n\n> ✦ *Ya hay una descarga en curso*\n> ✦ *Espera a que termine*`
+      }, { quoted: m });
     }
 
-    // Cambiar reacción a "enviando"
-    await conn.sendMessage(m.chat, { react: { text: '📤', key: m.key } });
-    
-    await conn.sendMessage(m.chat, {
-      document: {
-        url: data5.dllink
-      }, 
-      mimetype: 'application/vnd.android.package-archive', 
-      fileName: `KARBOT-${data5.name}.apk`, 
-      caption: `📦 *APK DESCARGADA EXITOSAMENTE*\n🔹 ${data5.name}`
-    }, {quoted: m});
-    
-    // Reacción de éxito final
-    await conn.sendMessage(m.chat, { react: { text: '✅', key: m.key } });
-    
+    userRequests[sender] = true;
+
+    // Reacción de búsqueda
+    await conn.sendMessage(jid, {
+      react: { text: '🔍', key: m.key }
+    });
+
+    const downloadAttempts = [
+      async () => {
+        const res = await axios.get(`https://api.dorratz.com/v2/apk-dl?text=${encodeURIComponent(text)}`);
+        const data = res.data;
+        if (!data.name) throw new Error('No data from dorratz API');
+        return { 
+          name: data.name, 
+          package: data.package, 
+          lastUpdate: data.lastUpdate, 
+          size: data.size, 
+          icon: data.icon, 
+          dllink: data.dllink 
+        };
+      },
+      async () => {
+        const res = await axios.get(`https://api.delirius.xyz/download/apk?query=${encodeURIComponent(text)}`);
+        const data = res.data;
+        const apkData = data.data;
+        return { 
+          name: apkData.name, 
+          developer: apkData.developer, 
+          publish: apkData.publish, 
+          size: apkData.size, 
+          icon: apkData.image, 
+          dllink: apkData.download 
+        };
+      },
+      async () => {
+        const searchA = await search(text);
+        const data5 = await download(searchA[0].id);
+        return { 
+          name: data5.name, 
+          package: data5.package, 
+          lastUpdate: data5.lastup, 
+          size: data5.size, 
+          icon: data5.icon, 
+          dllink: data5.dllink 
+        };
+      }
+    ];
+
+    let apkData = null;
+    for (const attempt of downloadAttempts) {
+      try {
+        apkData = await attempt();
+        if (apkData) break; 
+      } catch (err) {
+        console.error(`Error en API: ${err.message}`);
+        continue;
+      }
+    }
+
+    if (!apkData) {
+      throw new Error('No se pudo descargar el APK desde ninguna API');
+    }
+
+    // Mostrar información del APK
+    const apkDetails = `*「📱」 ${apkData.name}*\n\n` +
+                     `> ✦ *Paquete:* » ${apkData.package || 'N/A'}\n` +
+                     `> ✦ *Actualizado:* » ${apkData.lastUpdate || apkData.publish || 'Desconocido'}\n` +
+                     `> ✦ *Tamaño:* » ${apkData.size}\n` +
+                     `> ✦ *Desarrollador:* » ${apkData.developer || 'N/A'}`;
+
+    await conn.sendMessage(
+      jid,
+      {
+        image: { url: apkData.icon },
+        caption: apkDetails.trim(),
+      },
+      { quoted: m }
+    );
+
+    await conn.sendMessage(jid, {
+      react: { text: '📥', key: m.key }
+    });
+
+    // Verificar tamaño del APK
+    const apkSize = apkData.size.toLowerCase();
+    if (apkSize.includes('gb') || (apkSize.includes('mb') && parseFloat(apkSize) > 500)) {
+      await conn.sendMessage(
+        jid,
+        {
+          text: `*「❌」 APK Muy Pesado*\n\n> ✦ *El APK es muy grande para descargar*\n> ✦ *Tamaño:* » ${apkData.size}`
+        },
+        { quoted: m }
+      );
+      return;
+    }
+
+    // Enviar el APK
+    await conn.sendMessage(
+      jid,
+      {
+        document: { url: apkData.dllink },
+        mimetype: "application/vnd.android.package-archive",
+        fileName: `${apkData.name}.apk`,
+        caption: `*「📦」 ${apkData.name}*\n\n> ✦ *APK descargado exitosamente*\n> ✦ *Tamaño:* » ${apkData.size}`
+      },
+      { quoted: m }
+    );
+
+    await conn.sendMessage(jid, {
+      react: { text: '✅', key: m.key }
+    });
+
   } catch (error) {
-    // Reacción de error
-    await conn.sendMessage(m.chat, { react: { text: '❌', key: m.key } });
-    console.error('Error en descarga de APK:', error);
-    throw `❌ *ERROR AL DESCARGAR LA APK*\n${error.message || 'Intente nuevamente'}`;
+    console.error('Error en comando apk:', error);
+
+    await conn.sendMessage(jid, {
+      react: { text: '❌', key: m.key }
+    });
+
+    await conn.sendMessage(
+      jid,
+      {
+        text: `*「❌」 Error en Descarga*\n\n> ✦ *Error:* » ${error.message}\n> ✦ *Solución:* » Intenta con otra aplicación`
+      },
+      { quoted: m }
+    );
+  } finally {
+    // Limpiar el control de solicitudes
+    delete userRequests[sender];
   }
 };
 
-handler.help = ['apk']
-handler.tags = ['search']
-handler.command = /^(apk|apkmod|modapk|dapk2|aptoide|aptoidedl)$/i
+handler.help = ['apk', 'apkmod', 'modapk', 'dapk2', 'aptoide', 'aptoidedl'];
+handler.tags = ['download'];
+handler.command = ['apk', 'apkmod', 'modapk', 'dapk2', 'aptoide', 'aptoidedl'];
 
 export default handler;

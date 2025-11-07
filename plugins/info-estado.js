@@ -1,80 +1,106 @@
-import { generateWAMessageFromContent } from "baileys";
 import os from "os";
-import util from "util";
-import sizeFormatter from "human-readable";
-import fs from "fs";
 import { performance } from "perf_hooks";
 
 const handler = async (m, { conn, usedPrefix }) => {
-  const _uptime = process.uptime() * 1000;
-  const uptime = clockString(_uptime);
-  const totalusrReg = Object.values(global.db.data.users).filter((user) => user.registered == true).length;
-  const totalusr = Object.keys(global.db.data.users).length;
-  const chats = Object.entries(conn.chats).filter(
-    ([id, data]) => id && data.isChats
-  );
-  const groupsIn = chats.filter(([id]) => id.endsWith("@g.us"));
-  const groups = chats.filter(([id]) => id.endsWith("@g.us"));
-  const used = process.memoryUsage();
-  const { restrict, antiCall, antiprivado, modejadibot } =
-    global.db.data.settings[conn.user.jid] || {};
-  const { autoread, gconly, pconly, self } = global.opts || {};
-  const old = performance.now();
-  const neww = performance.now();
-  const rtime = (neww - old).toFixed(7);
-  const wm = 'KARBOT-MD';
+  try {
+    // Reacción inicial
+    await conn.sendMessage(m.chat, {
+      react: { text: '⏱️', key: m.key }
+    });
 
-  // INFORMACIÓN ACTUALIZADA
-  const info = `╭─「 📊 *ESTADO DE KARBOT-MD* 📊 」
-│
-│ 🤖 *Bot:* KARBOT-MD
-│ 👤 *Creador:* Hernandez
-│ 📞 *Soporte:* +50489759545
-│
-│ ⚡ *Rendimiento:* ${rtime}
-│ 🕐 *Uptime:* ${uptime}
-│ 🔧 *Prefijo:* ${usedPrefix}
-│ 🌐 *Modo:* ${self ? "privado" : "público"}
-│
-│ 👥 *Usuarios registrados:* ${totalusrReg}
-│ 👥 *Total usuarios:* ${totalusr}
-│ ${(conn.user.jid == global.conn.user.jid ? '' : `│ 🤖 Sub-bot de:\n│ ▢ +${global.conn.user.jid.split('@')[0]}`) || '│ 🤖 No es sub-bot'}
-│
-│ 💬 *Chats privados:* ${chats.length - groups.length}
-│ 👥 *Grupos:* ${groups.length}
-│ 📊 *Total chats:* ${chats.length}
-│
-│ ⚙️ *Configuraciones:*
-│ ▸ Auto-leer: ${autoread ? "✅" : "❌"}
-│ ▸ Restrict: ${restrict ? "✅" : "❌"}
-│ ▸ Solo PC: ${pconly ? "✅" : "❌"}
-│ ▸ Solo grupos: ${gconly ? "✅" : "❌"}
-│ ▸ Anti-privado: ${antiprivado ? "✅" : "❌"}
-│ ▸ Anti-llamadas: ${antiCall ? "✅" : "❌"}
-│ ▸ Mode jadibot: ${modejadibot ? "✅" : "❌"}
-╰─「 *KARBOT-MD - Proyecto Privado* 」`.trim();
+    const start = Date.now();
+    const ping = Date.now() - start;
 
-  // ENVÍO DE MENSAJE SIMPLE DE TEXTO
-  conn.sendMessage(m.chat, {  
-    text: info,
-    contextInfo: {
-      externalAdReply: {
-        mediaType: 2,
-        title: "🤖 KARBOT-MD - Estado del Sistema",
-        body: "Estado y estadísticas del bot",
-        sourceUrl: " "
-      }
+    // Información del sistema
+    const totalMemory = Math.round(os.totalmem() / (1024 * 1024 * 1024));
+    const freeMemory = Math.round(os.freemem() / (1024 * 1024 * 1024));
+    const usedMemory = totalMemory - freeMemory;
+    const memoryUsagePercent = Math.round((usedMemory / totalMemory) * 100);
+
+    const cpuUsage = os.loadavg()[0].toFixed(2);
+    const uptime = process.uptime();
+    const hours = Math.floor(uptime / 3600);
+    const minutes = Math.floor((uptime % 3600) / 60);
+    const uptimeString = `${hours}h ${minutes}m`;
+
+    // Estado del ping
+    let pingStatus = "";
+    let pingEmoji = "🟢";
+
+    if (ping < 100) {
+      pingStatus = "Excelente";
+      pingEmoji = "🟢";
+    } else if (ping < 300) {
+      pingStatus = "Bueno";
+      pingEmoji = "🟡";
+    } else if (ping < 600) {
+      pingStatus = "Regular";
+      pingEmoji = "🟠";
+    } else {
+      pingStatus = "Lento";
+      pingEmoji = "🔴";
     }
-  }, { quoted: m });
+
+    // Estado de la memoria
+    let memoryStatus = "";
+    let memoryEmoji = "🟢";
+
+    if (memoryUsagePercent < 60) {
+      memoryStatus = "Óptima";
+      memoryEmoji = "🟢";
+    } else if (memoryUsagePercent < 80) {
+      memoryStatus = "Moderada";
+      memoryEmoji = "🟡";
+    } else if (memoryUsagePercent < 90) {
+      memoryStatus = "Alta";
+      memoryEmoji = "🟠";
+    } else {
+      memoryStatus = "Crítica";
+      memoryEmoji = "🔴";
+    }
+
+    const responseMessage = `
+*🤖 Karbot - Estado del sistema*
+
+*📊 Conexión*
+${pingEmoji} *Ping:* ${ping} ms (${pingStatus})
+⏰ *Uptime:* ${uptimeString}
+
+*💾 Memoria* ${memoryEmoji}
+*Uso:* ${memoryUsagePercent}% (${memoryStatus})
+*Total:* ${totalMemory}GB
+*Libre:* ${freeMemory}GB
+
+*⚙️ Sistema*
+*CPU:* ${os.cpus().length} núcleos
+*Plataforma:* ${os.platform()}
+*Node.js:* ${process.version}
+
+${ping < 300 && memoryUsagePercent < 80 ? '✅ Todo en orden' : '⚠️ Revisa el sistema'}
+`;
+
+    await conn.sendMessage(m.chat, {
+      text: responseMessage
+    }, { quoted: m });
+
+    // Reacción final
+    const finalReaction = memoryUsagePercent < 80 && ping < 300 ? '✅' : '⚠️';
+    await conn.sendMessage(m.chat, {
+      react: { text: finalReaction, key: m.key }
+    });
+
+  } catch (error) {
+    console.error("Error en ping:", error);
+
+    await conn.sendMessage(m.chat, {
+      react: { text: '🚫', key: m.key }
+    });
+
+    await conn.sendMessage(m.chat, {
+      text: "*🚫 Error del sistema*\n\n> ✦ *No se pudo obtener el estado del sistema*"
+    }, { quoted: m });
+  }
 };
 
 handler.command = /^(ping|info|status|estado|infobot|karbotstats)$/i;
 export default handler;
-
-function clockString(ms) {
-  const h = Math.floor(ms / 3600000);
-  const m = Math.floor(ms / 60000) % 60;
-  const s = Math.floor(ms / 1000) % 60;
-  console.log({ ms, h, m, s });
-  return [h, m, s].map((v) => v.toString().padStart(2, 0)).join(":");
-}

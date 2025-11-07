@@ -1,53 +1,88 @@
-const handler = async (m, {conn, text, participants}) => {
-  const member = participants.map((u) => u.id);
+const handler = async (m, { conn, participants }) => {
+  try {
+    // Verificación manual sin usar dfail
+    if (!m.isGroup) {
+      return await conn.sendMessage(m.chat, {
+        text: `*「❌」 Comando Grupal*\n\n> ✦ *Este comando solo funciona en grupos*`
+      }, { quoted: m });
+    }
 
-  if (!text) {
-    var sum = member.length;
-  } else {
-    var sum = text;
-  }
+    // Verificar si es admin manualmente
+    const sender = m.sender;
+    const isAdmin = participants.find(p => p.id === sender)?.admin;
+    const isBotAdmin = participants.find(p => p.id === conn.user.jid)?.admin;
 
-  let total = 0;
-  const sider = [];
+    if (!isAdmin) {
+      return await conn.sendMessage(m.chat, {
+        text: `*「❌」 Permisos Insuficientes*\n\n> ✦ *Solo administradores pueden usar este comando*`
+      }, { quoted: m });
+    }
 
-  for (let i = 0; i < sum; i++) {
-    const users = m.isGroup ? participants.find((u) => u.id == member[i]) : {};
+    if (!isBotAdmin) {
+      return await conn.sendMessage(m.chat, {
+        text: `*「❌」 Bot No Admin*\n\n> ✦ *Necesito ser administrador para usar este comando*`
+      }, { quoted: m });
+    }
 
-    if ((typeof global.db.data.users[member[i]] == 'undefined' || global.db.data.users[member[i]].chat == 0) && !users.admin && !users.isSuperAdmin) {
-      if (typeof global.db.data.users[member[i]] !== 'undefined') {
-        if (global.db.data.users[member[i]].whitelist == false) {
+    const members = participants.map(u => u.id);
+    let total = 0;
+    const sider = [];
+
+    for (let i = 0; i < members.length; i++) {
+      const user = participants.find(u => u.id == members[i]);
+
+      // Verificar si el usuario no ha interactuado con el bot y no es admin
+      if ((typeof global.db.data.users[members[i]] == 'undefined' || 
+           global.db.data.users[members[i]].chat == 0) && 
+          !user?.admin && !user?.isSuperAdmin) {
+
+        if (typeof global.db.data.users[members[i]] !== 'undefined') {
+          if (global.db.data.users[members[i]].whitelist == false) {
+            total++;
+            sider.push(members[i]);
+          }
+        } else {
           total++;
-          sider.push(member[i]);
+          sider.push(members[i]);
         }
-      } else {
-        total++;
-        sider.push(member[i]);
       }
     }
+
+    const groupName = await conn.getName(m.chat);
+
+    if (total == 0) {
+      return await conn.sendMessage(m.chat, {
+        image: { url: 'https://files.catbox.moe/sjhtvx.png' },
+        caption: `*「✅」 Grupo Activo*\n\n> ✦ *Grupo:* » ${groupName}\n> ✦ *Miembros:* » ${members.length}\n> ✦ *Estado:* » Todos han interactuado con el bot`
+      }, { quoted: m });
+    }
+
+    await conn.sendMessage(m.chat, {
+      image: { url: 'https://files.catbox.moe/sjhtvx.png' },
+      caption: `*「👻」 Detección de Fantasmas*\n\n` +
+            `> ✦ *Grupo:* » ${groupName}\n` +
+            `> ✦ *Miembros totales:* » ${members.length}\n` +
+            `> ✦ *Usuarios inactivos:* » ${total}\n\n` +
+            `${sider.map((v, i) => `> ${i + 1}. @${v.replace(/@.+/, '')}`).join('\n')}\n\n` +
+            `> 💡 *Estos usuarios no han interactuado con el bot*`,
+      mentions: sider
+    }, { quoted: m });
+
+  } catch (error) {
+    console.error('Error en comando fantasmas:', error);
+    await conn.sendMessage(m.chat, {
+      text: `*「❌」 Error*\n\n> ✦ *Error:* » ${error.message}`
+    }, { quoted: m });
   }
-
-  if (total == 0) {
-    return conn.reply(m.chat, 
-      `✅ *NO HAY FANTASMAS EN EL GRUPO*\n\n` +
-      `✨ Todos los miembros han interactuado al menos una vez`,
-    m);
-  }
-
-  const groupName = await conn.getName(m.chat);
-
-  m.reply(
-    `👻 *DETECCIÓN DE FANTASMAS - KARBOT-MD* 👻\n\n` +
-    `🏷️ *Grupo:* ${groupName}\n` +
-    `👥 *Miembros verificados:* ${sum}\n\n` +
-    `🔍 *Usuarios inactivos (fantasmas):* ${total}\n\n` +
-    `${sider.map((v, i) => `  ${i + 1}. 👉🏻 @${v.replace(/@.+/, '')}`).join('\n')}\n\n` +
-    `💡 *Estos usuarios no han interactuado con el bot*`,
-  null, {mentions: sider});
 };
 
 handler.help = ['fantasmas'];
 handler.tags = ['group'];
 handler.command = /^(verfantasmas|fantasmas|sider|inactivos|fantasma)$/i;
-handler.admin = true;
-handler.botAdmin = true;
+
+// Removidos los handlers que activan dfail
+// handler.group = true;
+// handler.admin = true;
+// handler.botAdmin = true;
+
 export default handler;
