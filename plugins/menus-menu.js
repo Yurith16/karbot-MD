@@ -36,58 +36,36 @@ const handler = async (m, { conn, usedPrefix, __dirname, isPrems }) => {
 
     const _uptime = process.uptime() * 1000;
     const uptime = clockString(_uptime);
-    const rtotalreg = Object.values(global.db.data.users).filter(
-      (user) => user.registered == true
-    ).length;
     const rtotal = Object.keys(global.db.data.users).length || "0";
 
-    const user = global.db.data.users[m.sender];
-    const exp = user.exp ? user.exp : 0;
-    const limit = user.limit ? user.limit : 0;
-    const level = user.level ? user.level : 0;
-    const role = user.role ? user.role : "Nuevo";
-    const money = user.money ? user.money : 0;
-    const joincount = user.joincount ? user.joincount : 0;
-    const isPremium = user.premiumTime > 0 || isPrems;
-
-    // Comandos organizados - SOLO LOS TÍTULOS QUE QUIERES
+    // Comandos organizados - SOLO DESCARGAS Y HERRAMIENTAS
     const extrasCommands = {
       descarga: [
-        `${usedPrefix}play -- musica`,
-        `${usedPrefix}play2 -- video`,
-        `${usedPrefix}ytmp3 <url> -- audio`,
-        `${usedPrefix}ytmp3doc <url> -- audio`,
-        `${usedPrefix}ytmp4 <url> -- video`,
-        `${usedPrefix}ytmp4doc <url> -- video`,
-        `${usedPrefix}facebook <url>`,
-        `${usedPrefix}instagram <url>`,
-        `${usedPrefix}tiktok <url>`,
-        `${usedPrefix}mediafire <url>`,
-        `${usedPrefix}twitter <url>`,
+        `${usedPrefix}play <busqueda> -- Descargar música`,
+        `${usedPrefix}play2 <busqueda> -- Descargar video`,
+        `${usedPrefix}ytmp3 <url> -- Audio de YouTube`,
+        `${usedPrefix}ytmp3doc <url> -- Audio (documento)`,
+        `${usedPrefix}ytmp4 <url> -- Video de YouTube`,
+        `${usedPrefix}ytmp4doc <url> -- Video (documento)`,
+        `${usedPrefix}facebook <url> -- Descargar de Facebook`,
+        `${usedPrefix}instagram <url> -- Descargar de Instagram`,
+        `${usedPrefix}tiktok <url> -- Descargar de TikTok`,
+        `${usedPrefix}mediafire <url> -- Descargar de MediaFire`,
+        `${usedPrefix}twitter <url> -- Descargar de Twitter`,
       ],
-      herramientas: [`${usedPrefix}clima <lugar>`, `${usedPrefix}del <msj>`],
-      "efectos de audio": [
-        `${usedPrefix}bass`,
-        `${usedPrefix}blown`,
-        `${usedPrefix}deep`,
-        `${usedPrefix}earrape`,
-        `${usedPrefix}fast`,
-        `${usedPrefix}fat`,
-        `${usedPrefix}nightcore`,
-        `${usedPrefix}reverse`,
-        `${usedPrefix}robot`,
-        `${usedPrefix}slow`,
-        `${usedPrefix}smooth`,
-        `${usedPrefix}tupai`,
+      herramientas: [
+        `${usedPrefix}clima <lugar> -- Ver clima actual`,
+        `${usedPrefix}del -- Eliminar mensajes del bot`,
+        `${usedPrefix}sticker -- Crear sticker de imagen/video`,
+        `${usedPrefix}toimg -- Convertir sticker a imagen`,
+        `${usedPrefix}attp <texto> -- Texto colorido animado`,
+        `${usedPrefix}readmore <texto1|texto2> -- Texto con "leer más"`,
       ],
     };
 
     const borderedTags = {
       descarga: "📥 DESCARGAS",
       herramientas: "🛠️ HERRAMIENTAS",
-      "efectos de audio": "🎧 EFECTOS DE AUDIO",
-      "herramientas grupo": "👥 HERRAMIENTAS GRUPO",
-      owner: "👑 OWNER",
     };
 
     const help = Object.values(global.plugins)
@@ -136,27 +114,13 @@ ${allCommands
       .filter((section) => section !== "");
 
     const infoBotSection = `
-╭━━〔 ℹ️ INFO DEL BOT ℹ️ 〕━━╮
+╭━━〔 ℹ️ INFORMACIÓN DEL BOT 〕━━╮
 ┃
 ┃ ➡️ Creador: ${global.author || "KARBOT-MD"}
 ┃ ➡️ Contacto: wa.me/${global.owner?.[0]?.[0] || "0"}
-┃ ➡️ Actividad: ${uptime}
+┃ ➡️ Tiempo activo: ${uptime}
 ┃ ➡️ Usuarios: ${rtotal}
-┃ ➡️ Registrados: ${rtotalreg}
-┃
-╰━━━━━━━━━━━━━━━━━━━━╯
-`.trim();
-
-    const infoUserSection = `
-╭━━〔 👤 INFO DEL USUARIO 👤 〕━━╮
-┃
-┃ ➡️ Usuario: ${username}
-┃ ➡️ Nivel: ${level}
-┃ ➡️ Rol: ${role}
-┃ ➡️ XP: ${exp}
-┃ ➡️ Diamantes: ${limit}
-┃ ➡️ Dinero: ${money}
-┃ ➡️ Premium: ${isPremium ? "✅" : "❌"}
+┃ ➡️ Prefijo: ${usedPrefix}
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━╯
 `.trim();
@@ -166,6 +130,7 @@ ${allCommands
 ┃
 ┃ ➡️ Hola, ${username}
 ┃ ➡️ Fecha: ${week}, ${date}
+┃ ➡️ Tu asistente de herramientas y descargas
 ┃
 ╰━━━━━━━━━━━━━━━━━━━━╯
 `.trim();
@@ -173,9 +138,8 @@ ${allCommands
     const fullText = [
       mainHeader,
       infoBotSection,
-      infoUserSection,
       ...menuSections,
-      `🔥 *KARBOT-MD* - Tu asistente personal 🔥`,
+      `💡 *Tip:* Usa ${usedPrefix}comando para más información de cada comando`,
     ].join("\n\n");
 
     const imageUrl = "https://qu.ax/DMtmw.jpg";

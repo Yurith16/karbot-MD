@@ -1,100 +1,89 @@
-import {watchFile, unwatchFile} from 'fs';
-import chalk from 'chalk';
-import {fileURLToPath} from 'url';
-import fs from 'fs'; 
-import moment from 'moment-timezone';
+import { watchFile, unwatchFile } from "fs";
+import chalk from "chalk";
+import { fileURLToPath } from "url";
+import moment from "moment-timezone";
 
-global.botnumber = ""
-global.confirmCode = ""
+// Configuración básica del Bot
+global.botnumber = "";
+global.confirmCode = "";
 global.authFile = `KarbotSession`;
 
-// Cambiar a true si el Bot responde a sus comandos con otros comandos.
-// Cambiar a false para usar el Bot desde el mismo numero del Bot.
-// Error de m.isBaileys marcado como false fix temporal
+// Configuración de sesión
 global.isBaileysFail = false;
+global.defaultLenguaje = "es";
 
-global.defaultLenguaje = 'es';
+// Owner del bot
+global.owner = [["50496926150", "👑 HERNANDEZ 👑", true]];
 
-global.owner = [
-  ['50496926150', '👑 HERNANDEZ 👑', true]
-];
+global.suittag = ["50496926150"];
+global.prems = ["50496926150"];
 
-global.suittag = ['50496926150'];
-global.prems = ['50496926150'];
-
-// Base Rest Api (SE MANTIENE)
+// APIs necesarias
 global.BASE_API_DELIRIUS = "https://delirius-apiofc.vercel.app";
 
-global.packname = 'Karbot-Sticker';
-global.author = 'HERNANDEZ';
-global.wm = 'KARBOT-MD';
-global.titulowm = 'KARBOT-MD';
-global.titulowm2 = `KARBOT-MD`;
-global.igfg = 'KARBOT-MD';
-global.wait = '*_[ ⏳ ] Cargando..._*';
+// Metadata para stickers y mensajes
+global.packname = "Karbot-Sticker";
+global.author = "HERNANDEZ";
+global.wm = "KARBOT-MD";
 
-// ELIMINAR REFERENCIAS A IMÁGENES (COMENTADAS PORQUE NO EXISTIRÁN)
-// global.imagen1 = fs.readFileSync('./src/assets/images/menu/languages/es/menu.png');
-// global.imagen2 = fs.readFileSync('./src/assets/images/menu/languages/pt/menu.png');
-// global.imagen3 = fs.readFileSync('./src/assets/images/menu/languages/fr/menu.png')
-// global.imagen4 = fs.readFileSync('./src/assets/images/menu/languages/en/menu.png')
-// global.imagen5 = fs.readFileSync('./src/assets/images/menu/languages/ru/menu.png')
+// Mensajes de espera
+global.wait = "*⏳ Cargando...*";
+global.waitt = "*⏳ Procesando...*";
 
-global.mods = [];
+// Configuración de tiempo
+global.d = new Date(new Date() + 3600000);
+global.locale = "es";
+global.dia = d.toLocaleDateString(locale, { weekday: "long" });
+global.fecha = d.toLocaleDateString("es", {
+  day: "numeric",
+  month: "numeric",
+  year: "numeric",
+});
+global.mes = d.toLocaleDateString("es", { month: "long" });
+global.año = d.toLocaleDateString("es", { year: "numeric" });
+global.tiempo = d.toLocaleString("en-US", {
+  hour: "numeric",
+  minute: "numeric",
+  second: "numeric",
+  hour12: true,
+});
 
-//* *******Tiempo***************
-global.d = new Date(new Date + 3600000);
-global.locale = 'es';
-global.dia = d.toLocaleDateString(locale, {weekday: 'long'});
-global.fecha = d.toLocaleDateString('es', {day: 'numeric', month: 'numeric', year: 'numeric'});
-global.mes = d.toLocaleDateString('es', {month: 'long'});
-global.año = d.toLocaleDateString('es', {year: 'numeric'});
-global.tiempo = d.toLocaleString('en-US', {hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true});
-//* ****************************
-global.wm2 = `${dia} ${fecha}\nKARBOT-MD`;
-global.gt = 'KARBOT-MD';
-global.mysticbot = 'KARBOT-MD';
-// ELIMINAR ENLACES A CANALES/GRUPOS DEL ANTERIOR DUEÑO
-global.channel = '';
-global.md = 'https://github.com/Yurith16/karbot-MD';
-global.mysticbot = 'https://github.com/Yurith16/karbot-MD';
-global.waitt = '*_[ ⏳ ] Cargando..._*';
-global.waittt = '*_[ ⏳ ] Cargando..._*';
-global.waitttt = '*_[ ⏳ ] Cargando..._*';
-global.nomorown = '50496926150';
-global.pdoc = ['application/vnd.openxmlformats-officedocument.presentationml.presentation', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/msword', 'application/pdf', 'text/rtf'];
-global.cmenut = '❖––––––『';
-global.cmenub = '┊✦ ';
-global.cmenuf = '╰━═┅═━––––––๑\n';
-global.cmenua = '\n⌕ ❙❘❙❙❘❙❚❙❘❙❙❚❙❘❙❘❙❚❙❘❙❙❚❙❘❙❙❘❙❚❙❘ ⌕\n     ';
-global.dmenut = '*❖─┅──┅〈*';
-global.dmenub = '*┊»*';
-global.dmenub2 = '*┊*';
-global.dmenuf = '*╰┅────────┅✦*';
-global.htjava = '⫹⫺';
-global.htki = '*⭑•̩̩͙⊱•••• ☪*';
-global.htka = '*☪ ••••̩̩͙⊰•⭑*';
-global.comienzo = '• • ◕◕════';
-global.fin = '════◕◕ • •';
-global.botdate = `*[ 📅 ] Fecha:*  ${moment.tz('America/Mexico_City').format('DD/MM/YY')}`;
-global.bottime = `*[ ⏳ ] Hora:* ${moment.tz('America/Mexico_City').format('HH:mm:ss')}`;
-// ELIMINAR REFERENCIA A IMAGEN (COMENTADA)
-global.fgif = { key: { participant: '0@s.whatsapp.net' }, message: { 'videoMessage': { 'title': wm, 'h': `Hmm`, 'seconds': '999999999', 'gifPlayback': 'true', 'caption': bottime, 'jpegThumbnail': ''}}};
-global.multiplier = 99;
-// MANTENER APIS PERO ELIMINAR ENLACES CON TEXTO DEL ANTERIOR DUEÑO
-global.flaaa = [
-  'https://flamingtext.com/net-fu/proxy_form.cgi?&imageoutput=true&script=water-logo&script=water-logo&fontsize=90&doScale=true&scaleWidth=800&scaleHeight=500&fontsize=100&fillTextColor=%23000&shadowGlowColor=%23000&backgroundColor=%23000&text=',
-  'https://flamingtext.com/net-fu/proxy_form.cgi?&imageoutput=true&script=crafts-logo&fontsize=90&doScale=true&scaleWidth=800&scaleHeight=500&text=',
-  'https://flamingtext.com/net-fu/proxy_form.cgi?&imageoutput=true&script=amped-logo&doScale=true&scaleWidth=800&scaleHeight=500&text=',
-  'https://www6.flamingtext.com/net-fu/proxy_form.cgi?&imageoutput=true&script=sketch-name&doScale=true&scaleWidth=800&scaleHeight=500&fontsize=100&fillTextType=1&fillTextPattern=Warning!&text=',
-  'https://www6.flamingtext.com/net-fu/proxy_form.cgi?&imageoutput=true&script=sketch-name&doScale=true&scaleWidth=800&scaleHeight=500&fontsize=100&fillTextType=1&fillTextPattern=Warning!&fillColor1Color=%23f2aa4c&fillColor2Color=%23f2aa4c&fillColor3Color=%23f2aa4c&fillColor4Color=%23f2aa4c&fillColor5Color=%23f2aa4c&fillColor6Color=%23f2aa4c&fillColor7Color=%23f2aa4c&fillColor8Color=%23f2aa4c&fillColor9Color=%23f2aa4c&fillColor10Color=%23f2aa4c&fillOutlineColor=%23f2aa4c&fillOutline2Color=%23f2aa4c&backgroundColor=%23101820&text=',
+// Información de tiempo para mensajes
+global.botdate = `*📅 Fecha:* ${moment.tz("America/Mexico_City").format("DD/MM/YY")}`;
+global.bottime = `*⏰ Hora:* ${moment.tz("America/Mexico_City").format("HH:mm:ss")}`;
+
+// Configuración de archivos permitidos
+global.pdoc = [
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/msword",
+  "application/pdf",
+  "text/rtf",
 ];
-//* ************************
 
+// Configuración para GIFs en stickers
+global.fgif = {
+  key: { participant: "0@s.whatsapp.net" },
+  message: {
+    videoMessage: {
+      title: "KARBOT-MD",
+      h: `Hmm`,
+      seconds: "999999999",
+      gifPlayback: "true",
+      caption: `KARBOT-MD • ${moment.tz("America/Mexico_City").format("HH:mm:ss")}`,
+      jpegThumbnail: "",
+    },
+  },
+};
+
+global.multiplier = 99;
+
+// Watch file for changes
 const file = fileURLToPath(import.meta.url);
 watchFile(file, () => {
   unwatchFile(file);
-  console.log(chalk.redBright('Update \'config.js\''));
+  console.log(chalk.redBright("Se actualizó config.js"));
   import(`${file}?update=${Date.now()}`);
 });
-global.groq = 'gsk';
